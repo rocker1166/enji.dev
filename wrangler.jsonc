@@ -1,12 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "enjidotdev",
-  "main": "./.output/server/index.mjs",
   "compatibility_date": "2025-10-24",
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./.output/public/",
-  },
   "observability": {
     "enabled": true,
   },
