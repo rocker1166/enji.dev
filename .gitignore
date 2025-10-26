@@ -27,3 +27,7 @@ logs
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+## Panda
+styled-system
+styled-system-studio
