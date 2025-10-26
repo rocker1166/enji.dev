@@ -1,0 +1,30 @@
+{
+  "Vue Component": {
+    "scope": "vue",
+    "prefix": "vc",
+    "body": [
+      "<template>",
+      "  <div>",
+      "    $0",
+      "  </div>",
+      "</template>",
+      "",
+      "<script setup lang=\"ts\">",
+      "</script>",
+    ],
+  },
+  "Region": {
+    "prefix": "reg",
+    "scope": "typescript,javascript",
+    "body": ["//#region ${1}", "${TM_SELECTED_TEXT}$0", "//#endregion ${1}"],
+  },
+  "Region HTML": {
+    "prefix": "reg",
+    "scope": "html",
+    "body": [
+      "<!-- #region ${1} -->",
+      "${TM_SELECTED_TEXT}$0",
+      "<!-- #endregion ${1} -->",
+    ],
+  },
+}
