@@ -1,0 +1,20 @@
+extends:
+  - '@commitlint/config-conventional'
+rules:
+  'scope-enum':
+    - 2
+    - 'always'
+    - - 'styling'
+      - 'seo'
+  'type-enum':
+    - 2
+    - 'always'
+    - - 'chore'
+      - 'docs'
+      - 'feat'
+      - 'fix'
+      - 'perf'
+      - 'refactor'
+      - 'revert'
+      - 'style'
+      - 'test'
