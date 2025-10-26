@@ -1,25 +1,28 @@
 {
-	"name": "enjidotdev",
-	"type": "module",
-	"private": true,
-	"scripts": {
-		"build": "nuxt build",
-		"dev": "nuxt dev",
-		"generate": "nuxt generate",
-		"preview": "pnpm run build && wrangler dev",
-		"postinstall": "nuxt prepare",
-		"deploy": "pnpm run build && wrangler deploy",
-		"cf-typegen": "wrangler types"
-	},
-	"dependencies": {
-		"nuxt": "^4.2.0",
-		"vue": "^3.5.22",
-		"vue-router": "^4.6.3"
-	},
-	"devDependencies": {
-		"h3": "2.0.1-rc.4",
-		"nitro-cloudflare-dev": "^0.2.2",
-		"nitropack": "^2.12.8",
-		"wrangler": "^4.45.0"
-	}
+  "name": "enjidotdev",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "pnpm run build && wrangler dev",
+    "postinstall": "nuxt prepare",
+    "deploy": "pnpm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "format:check": "prettier --check .",
+    "format:fix": "prettier --write ."
+  },
+  "dependencies": {
+    "nuxt": "^4.2.0",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "h3": "2.0.1-rc.4",
+    "nitro-cloudflare-dev": "^0.2.2",
+    "nitropack": "^2.12.8",
+    "prettier": "^3.6.2",
+    "wrangler": "^4.45.0"
+  }
 }
