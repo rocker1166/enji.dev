@@ -1,7 +1,8 @@
 {
   "name": "enjidotdev",
-  "type": "module",
+  "version": "2.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
