@@ -1,0 +1,186 @@
+---
+title: Multimodal RAG with ColPali — Retrieving Documents by Vision, Not OCR
+description: ColPali encodes document images directly — no OCR, no chunking. Here's how to build multimodal RAG that actually works.
+date: '2026-04-05'
+lang: en
+tags:
+  - ai-agents
+  - typescript
+  - postgresql
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+A user asked our RAG system: "What was Q3 revenue for the Asia-Pacific segment?"
+
+The system returned a confident answer. The answer was wrong.
+
+Not because the model failed — because OCR had turned a structured quarterly earnings table into a flat stream of numbers. The positional relationships between row headers, column headers, and cell values were gone. What had been a clean 6×4 table in the PDF became `42 31 28 17 APAC EMEA Americas...` with no spatial structure. The retrieval system found the right page. The LLM had no way to know which number corresponded to which segment and which quarter.
+
+This is the dirty secret of text-based RAG on rich documents: the pipeline throws away exactly the information that makes the document valuable, before retrieval even starts.
+
+**ColPali** (arXiv:2407.01449) fixes this by not extracting text at all. It encodes document pages as images, retrieves by visual similarity, and answers using what the model actually *sees*.
+
+---
+
+## When to Use ColPali vs Text RAG
+
+I want to put this table first, because the most common mistake is reaching for ColPali when plain text RAG would do the job faster and cheaper.
+
+| Document Type | ColPali | Text RAG |
+|---|---|---|
+| Financial reports with tables | ✓ Best | ✗ Loses structure |
+| Technical diagrams + explanation | ✓ Best | ✗ Diagram becomes nothing |
+| Research papers with figures | ✓ Strong | Partial |
+| Scanned PDFs (image-only) | ✓ Only option | ✗ OCR fails |
+| Product catalogs with images | ✓ Strong | ✗ Images lost |
+| Plain text documents | ✗ Overkill | ✓ Faster, cheaper |
+| Legal contracts (text-heavy) | ✗ Overkill | ✓ Sufficient |
+
+For most production systems: **run both and merge**. ColPali for visual retrieval, text RAG for text-heavy content, combined with Reciprocal Rank Fusion (RRF: `1 / (k + rank)` where k=60). A document ranked #1 by both retrievers scores higher than any document ranked #1 by only one.
+
+---
+
+## The Problem with Text-Based RAG on Rich Documents
+
+<Mermaid chart={`
+flowchart LR
+    subgraph "Text RAG — loses structure"
+        PDF1[PDF] --> OCR["OCR / text extract"]
+        OCR --> LOST["Table: 42 31 28 17\nFigure 1. caption\n... structure gone"]
+        LOST --> EMB1["Embed chunks"]
+        EMB1 --> VDB1[("Vector DB")]
+    end
+
+    subgraph "ColPali — keeps structure"
+        PDF2[PDF] --> IMG["Render as image"]
+        IMG --> PATCH["1024 patch vectors\nper page"]
+        PATCH --> VDB2[("Vector DB")]
+    end
+
+    style LOST fill:#7f1d1d,color:#fca5a5
+    style PATCH fill:#14532d,color:#86efac
+`} />
+
+When OCR extracts a financial table, it produces a flat list of numbers with no positional relationships. ColPali encodes the page as 1024 image patches — each patch is a small region of the page. The spatial structure, visual hierarchy, and relationships between elements are all preserved.
+
+OCR is lossy compression. For documents where structure matters, it's the wrong foundation.
+
+---
+
+## How ColPali Works
+
+ColPali uses **late interaction** — borrowed from ColBERT for text retrieval. Instead of compressing a whole page into one vector, you keep per-patch vectors and compute similarity at query time.
+
+<Mermaid chart={`
+flowchart TD
+    subgraph "Indexing (done once)"
+        PAGE["Document Page\n(rendered as image)"] --> ENC["PaliGemma Encoder"]
+        ENC --> PATCHES["1024 patch vectors\n(32×32 grid, 128-dim each)"]
+        PATCHES --> DB[("pgvector\nor Qdrant")]
+    end
+
+    subgraph "Retrieval (per query)"
+        Q["User Query\n'What is Q3 revenue?'"] --> QE["Query Encoder\n→ query token vectors"]
+        DB --> MAXSIM["MaxSim Scoring\nfor each candidate page"]
+        QE --> MAXSIM
+        MAXSIM --> TOP["Top-K Pages"]
+    end
+
+    TOP --> VLM["Gemini / GPT-4V\n(sees actual page images)"]
+    Q --> VLM
+    VLM --> ANS["Answer with\nvisual context"]
+
+    style PATCHES fill:#1e3a5f,color:#93c5fd
+    style MAXSIM fill:#7c3aed,color:#e9d5ff
+    style ANS fill:#14532d,color:#86efac
+`} />
+
+### The MaxSim Formula
+
+The intuition first: each query token finds its best matching image patch. The total score is the sum of those best matches.
+
+This is why it works on tables. The query tokens for "Q3" and "revenue" each find the exact patches they correspond to — the column header and the row header — rather than competing with every other word on the page. A single compressed vector would average everything together, drowning the signal.
+
+```text
+Score(query, document) = Σᵢ maxⱼ (qᵢ · dⱼ)
+```
+
+The current SOTA model: **ColQwen2-v1.0** scores **89.3%** on the [ViDoRe benchmark](https://huggingface.co/spaces/vidore/vidore-leaderboard) — significantly ahead of OCR-based systems on visually complex documents.
+
+---
+
+## The Indexing Pipeline
+
+At DPI=150 on an A100 GPU, indexing runs at roughly **800ms per page**. A 100-page document takes ~80 seconds. This is a one-time cost — run it as a background job, not synchronously.
+
+The pgvector schema stores each patch as a separate row:
+
+```sql
+CREATE TABLE document_pages (
+    id         SERIAL PRIMARY KEY,
+    doc_id     TEXT NOT NULL,
+    page_num   INTEGER NOT NULL,
+    UNIQUE(doc_id, page_num)
+);
+
+-- Each page → 1024 rows here (32×32 patches, 128-dim vectors)
+CREATE TABLE page_patches (
+    id          SERIAL PRIMARY KEY,
+    page_id     INTEGER REFERENCES document_pages(id) ON DELETE CASCADE,
+    patch_index INTEGER NOT NULL,
+    embedding   vector(128) NOT NULL
+);
+
+CREATE INDEX ON page_patches USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+
+<Callout variant="warning">
+At 1024 patches per page, a 100-page document creates 102,400 rows in `page_patches`. For large collections, switch from HNSW to IVF indexing — IVF trades some recall for much faster build time and smaller memory footprint at scale.
+</Callout>
+
+---
+
+## Retrieval: Two-Phase MaxSim
+
+Full MaxSim against every page is expensive. The production approach runs two phases:
+
+<Mermaid chart={`
+flowchart LR
+    Q["Query"] --> ANN["Phase 1 — ANN\nFast approximate search\nusing mean query vector\n→ Top 50 candidates"]
+    ANN --> EXACT["Phase 2 — Exact MaxSim\nCompute exact score for\neach candidate page\n→ Re-rank to Top-K"]
+    EXACT --> PAGES["Top-K Pages"]
+    PAGES --> GEMINI["Gemini Flash\nSees actual images\nGenerates answer"]
+
+    style ANN fill:#1e3a5f,color:#93c5fd
+    style EXACT fill:#7c3aed,color:#e9d5ff
+    style GEMINI fill:#14532d,color:#86efac
+`} />
+
+Phase 1 uses the mean query patch as a proxy for fast ANN candidate selection. Phase 2 fetches all patches for each candidate page and computes the exact MaxSim score. The two-phase approach keeps total query latency under 3.5 seconds on typical document collections.
+
+| Step | Typical Time |
+|---|---|
+| Query encoding (GPU) | ~50ms |
+| ANN candidate retrieval (pgvector HNSW) | ~10ms |
+| MaxSim reranking (top 50 candidates) | ~100ms |
+| VLM answer generation (Gemini Flash) | ~2–3s |
+| **Total** | **~2.5–3.5s** |
+
+---
+
+## Resources
+
+- [ColPali: Efficient Document Retrieval with Vision Language Models (arXiv:2407.01449)](https://arxiv.org/abs/2407.01449)
+- [ColBERT: Late Interaction Mechanism (arXiv:2004.12832)](https://arxiv.org/abs/2004.12832)
+- [vidore/colqwen2-v1.0](https://huggingface.co/vidore/colqwen2-v1.0) — Current SOTA, 89.3% on ViDoRe
+- [colpali-engine (Python)](https://github.com/illuin-tech/colpali) — Official ColQwen2 implementation
+- [ViDoRe Leaderboard](https://huggingface.co/spaces/vidore/vidore-leaderboard)
+- [LlamaIndex ColPali integration](https://docs.llamaindex.ai/en/stable/examples/multi_modal/colpali/)
+
+---
+
+OCR is the wrong primitive for 60% of enterprise documents. It works on plain text. It loses structure on tables. It produces nothing on charts and diagrams. For a decade, we've been building document understanding systems on a foundation that throws away the hardest-won information in the document — the visual structure. ColPali doesn't fix OCR. It bypasses it entirely. That's the right solution.

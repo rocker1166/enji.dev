@@ -1,0 +1,176 @@
+---
+title: Winning 100agentdev — What I Built, What Broke, and What I Learned
+description: Winning 100agentdev over 600 teams — fan-out architecture, a 3 AM loop bug, and lessons from 48 hours of hacking.
+date: '2026-03-22'
+lang: en
+tags:
+  - hackathon
+  - ai-agents
+  - typescript
+  - nextjs
+category: story
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+At 3:47 AM on the second night of 100agentdev, my teammate messaged me:
+
+> "the orchestrator is looping. it called the search agent 47 times in 14 seconds and we have 6 hours left"
+
+That was the moment I thought we'd lost. We hadn't. But getting from that message to "first place out of 600+ teams" required the most focused six hours I've ever spent debugging — followed by the most anxious two hours I've ever spent demoing.
+
+---
+
+## The Challenge
+
+100agentdev is an international hackathon focused specifically on AI agent systems. The prompt was intentionally broad: **build a useful multi-agent system that demonstrates real-world utility**.
+
+We chose **automated competitive intelligence for startups** — give it a company name and it autonomously researches competitors, analyzes market position, identifies gaps, and produces an actionable strategy brief. The analysis that would take a human analyst 2-3 days, in under 3 minutes.
+
+---
+
+## Architecture v1: What We Pitched (and Why It Was Wrong)
+
+Our initial architecture was clean. Too clean.
+
+<Mermaid chart={`
+flowchart LR
+    U([User Input]) --> RA[Research Agent]
+    RA -->|"Competitor URLs"| SC[Scraper Agent]
+    SC -->|"Raw Data"| AN[Analysis Agent]
+    AN -->|"Insights"| RP[Report Agent]
+    RP --> F([Final Brief])
+    style U fill:#1e3a5f,color:#93c5fd
+    style F fill:#1e3a5f,color:#93c5fd
+`} />
+
+Linear. Sequential. Each agent passes output to the next.
+
+The problem: total time = sum of all agent times. For 5 competitors, that was **nearly 8 minutes**. Way too slow for a live demo to judges who are evaluating 600 submissions.
+
+---
+
+## Architecture v2: Fan-Out / Fan-In
+
+We scrapped sequential processing and went with a fan-out/fan-in pattern with a central orchestrator:
+
+<Mermaid chart={`
+flowchart TD
+    U([User Input]) --> O["🎯 Orchestrator Agent\nplanning + routing"]
+    O -->|"fan-out · parallel"| R1["🔍 Researcher C1"]
+    O --> R2["🔍 Researcher C2"]
+    O --> R3["🔍 Researcher C3"]
+    R1 & R2 & R3 -->|"fan-in"| S["🧠 Synthesis Agent"]
+    S --> ST["📐 Strategy Agent"]
+    ST --> REP(["📄 Report"])
+    style U fill:#1e3a5f,color:#93c5fd
+    style REP fill:#14532d,color:#86efac
+`} />
+
+All competitor researchers run **in parallel**. This cut total time from ~8 minutes to **~2.5 minutes**.
+
+`Promise.allSettled` over `Promise.all` is intentional. If one competitor's research fails — rate limit, bad URL, anything — the rest of the results are still usable. `Promise.all` throws on the first failure and loses everything. In hackathon mode, resilience beats perfection.
+
+---
+
+## The Bug at 3:47 AM
+
+The infinite loop. Here's what caused it:
+
+The researcher agent was designed to "decide whether more searching is needed." With a poorly constrained prompt, it kept deciding yes — calling the search tool recursively, 47 times in 14 seconds.
+
+```typescript
+// THE BAD VERSION — caused the loop
+async function runResearcherAgent(input: ResearchInput) {
+  while (true) {
+    const result = await agent.step(input);
+    if (result.done) break; // This condition was never true
+    input = result.nextInput;
+  }
+}
+```
+
+The fix was brutal in its simplicity: **remove the agent's ability to self-direct**.
+
+```typescript
+// THE FIXED VERSION — fixed pipeline, 3 steps max
+async function runResearcherAgent(input: ResearchInput): Promise<CompetitorData> {
+  const searchResults = await searchWeb(`${input.competitor} analysis`);
+  const rawData = await extractStructured(searchResults);
+  return { ...rawData, qualityScore: validateQuality(rawData) };
+}
+```
+
+The researcher agent no longer decides what to do next. It follows a fixed 3-step pipeline. The orchestrator is the only component with agency over flow control.
+
+> **In multi-agent systems, only one agent should own flow control. All other agents are stateless, fixed-step processors.**
+
+---
+
+## The Six Hours Between the Fix and the Demo
+
+We fixed the loop at 4:15 AM. The judging session started at 10:30 AM. Here's what happened in between.
+
+After the fix, I ran one full pipeline end-to-end. It completed in 2 minutes 49 seconds. Then I found two more bugs: the synthesis agent was occasionally truncating competitor profiles when one researcher returned an unusually large dataset, and the strategy section was sometimes missing the "opportunity scores" formatting that made the output scannable.
+
+Both were prompt engineering bugs. Fixed by 5:30 AM. I ran three more full runs — Linear, Notion, Figma — to build confidence in the output quality. All three looked good.
+
+6:00 AM: I pushed the fixes and wrote a short README explaining the architecture. My teammate reviewed it while I made coffee.
+
+8:00 AM: We each got 90 minutes of sleep.
+
+9:45 AM: We were in the judging queue, laptop open, running one final test against "Notion." Two minutes 41 seconds. The output looked strong.
+
+---
+
+## The Demo That Won
+
+The judging panel gave us 5 minutes. I typed "Notion" as the target company.
+
+In **2 minutes 41 seconds**, the system produced:
+
+- Competitive profiles of Linear, Coda, Obsidian, Confluence, and Roam Research
+- A clear articulation of Notion's market position (horizontal tool in a world moving toward vertical)
+- Three genuine market gaps with opportunity scores
+- A strategic recommendation: double down on Notion AI and developer integrations before the window closes
+
+One judge said: *"This would have taken my team two days."*
+
+We won.
+
+---
+
+## The Numbers
+
+| Metric | Value |
+|---|---|
+| Total teams | 600+ |
+| Our placement | **1st** |
+| End-to-end time (Notion demo) | 2m 41s |
+| Competitor researchers in parallel | 5 |
+| Total LLM calls per analysis | 12–18 |
+| Agent-caused bugs fixed during hackathon | 7 |
+| Hours of sleep (combined, 2 days) | ~9 |
+
+---
+
+## The Principles
+
+After the hackathon, I wrote these down:
+
+**One agent, one job.** Agents that try to do multiple things do none reliably.
+
+**Deterministic beats autonomous for reliability.** The fixed 3-step researcher pipeline is less "intelligent" than a fully autonomous agent. It's also 10× more reliable. For production systems, reliability wins.
+
+**Structured output is the inter-agent contract.** Free-form text between agents means more prompt engineering than actual features. Zod schemas as contracts changed everything.
+
+**Plan for partial failure.** `Promise.allSettled` over `Promise.all`. Retry logic on rate limits. Graceful degradation when data is missing. Partial failure is the norm in multi-agent systems, not the exception.
+
+**Ship the boring, reliable version.** At 4 AM we were tempted to build a more sophisticated self-directing orchestrator. We didn't. We built the boring version that worked. That's the version that won.
+
+---
+
+100agentdev was 48 of the most intense hours of my engineering career. But the loop bug at 3:47 AM taught me something I carry into every agent system I build now: the most dangerous agent in any system is the one that decides it needs more information. Give an agent the authority to keep searching, and it will keep searching — confidently, expensively, forever — unless you take that authority away.
+
+The orchestrator loop bug was a failure of design before it was a failure of code. The fix wasn't adding a break condition. The fix was accepting that some agents shouldn't have the option to decide.

@@ -6,7 +6,7 @@ import PostPreview from '@/contents/blog/PostPreview';
 
 import type { TPostFrontMatter } from '@/types';
 
-const PINNED_POST = 'the-2023-retrospective';
+const PINNED_POST = 'managing-50-plus-tools-ai-agent-token-optimization';
 
 export type BlogContentsProps = {
   posts: Array<{

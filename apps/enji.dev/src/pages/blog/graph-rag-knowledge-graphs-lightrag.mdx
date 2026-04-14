@@ -1,0 +1,226 @@
+---
+title: Graph RAG — Knowledge Graphs, Community Detection, and LightRAG
+description: GraphRAG vs LightRAG — community detection, knowledge graphs, and structured retrieval beyond naive vector search.
+date: '2026-04-12'
+lang: en
+tags:
+  - ai-agents
+  - postgresql
+  - typescript
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+Ask standard vector RAG: "What are the common themes in all customer complaints over the last year?"
+
+It will retrieve the most semantically similar chunks to your query. Each chunk is a local piece of text. The answer will reflect whichever complaints used language similar to "common themes" and "customer complaints" — not actually the themes that appear most often across the corpus.
+
+This is vector RAG working exactly as designed, and failing at exactly the right use case.
+
+I ran into this problem when building an analysis tool for a client's support ticket corpus — 8,000 tickets over 18 months. The simple query "what do customers complain about most?" returned chunks about the top complaints in individual tickets, not the actual distribution across all tickets. Vector search finds *similar* text. It cannot aggregate, cluster, or find patterns *across* a corpus.
+
+Graph RAG solves this by building a knowledge graph during indexing — extracting entities, relationships, and communities — and using that structure for queries that require cross-document reasoning.
+
+---
+
+## Standard RAG vs Graph RAG
+
+<Mermaid chart={`
+flowchart TD
+    subgraph "Standard RAG"
+        D1[Documents] --> CHUNK[Chunk + Embed]
+        CHUNK --> VDB1[("Vector DB")]
+        Q1[Question] --> ANN[ANN Search]
+        VDB1 --> ANN
+        ANN --> GEN1[LLM generates answer]
+    end
+
+    subgraph "Graph RAG adds"
+        D2[Documents] --> EXT["Extract entities\n& relationships"]
+        EXT --> KG[("Knowledge Graph\nnodes + edges")]
+        KG --> CD["Community Detection\n(Louvain algorithm)"]
+        CD --> SUM["Community Summaries\n(LLM-generated, one-time)"]
+    end
+
+    Q2[Global question] --> SUM --> GEN2[LLM synthesizes answer]
+    Q3[Local question] --> VDB1
+
+    style SUM fill:#1e3a5f,color:#93c5fd
+    style KG fill:#7c3aed,color:#e9d5ff
+`} />
+
+The "global query" capability is the key differentiator. For questions about themes, patterns, and cross-document relationships, the graph's community summaries provide structured context that no amount of vector search can produce.
+
+---
+
+## Microsoft GraphRAG: How It Works
+
+Microsoft Research published GraphRAG (arXiv:2404.16130) with four pipeline stages:
+
+### Stage 1 — Entity and Relationship Extraction
+
+Every document chunk is processed by an LLM that extracts:
+- Named entities (people, organizations, locations, concepts)
+- Typed relationships between entities ("Alice *works at* TechCorp")
+- Key claims (important assertions about entities)
+
+This produces `(entity, relationship, entity)` triples — the raw material for the knowledge graph.
+
+### Stage 2 — Graph Construction
+
+Entity resolution merges duplicates: "Microsoft," "MSFT," and "the Redmond company" become one node. Embedding-based clustering handles this automatically.
+
+### Stage 3 — Community Detection with Louvain
+
+The Louvain algorithm partitions the knowledge graph into **communities** — groups of entities more connected internally than to the rest of the graph.
+
+<Mermaid chart={`
+graph TD
+    subgraph "Community A — AI Leadership"
+        CEO["CEO: John Smith"] --- MSFT["Microsoft"]
+        MSFT --- GPT["GPT-4"]
+        CEO --- STRAT["AI Strategy"]
+    end
+
+    subgraph "Community B — Competitors"
+        GOOG["Google"] --- GEMINI["Gemini"]
+        GOOG --- DEEPMIND["DeepMind"]
+        ANTHROPIC["Anthropic"] --- CLAUDE["Claude"]
+    end
+
+    subgraph "Community C — Regulation"
+        EU["EU AI Act"] --- REG["Regulators"]
+        REG --- GOOG
+        REG --- MSFT
+    end
+`} />
+
+Louvain runs in **O(n log n)** — practical for graphs with millions of nodes. Each community gets a LLM-generated summary: who/what are the key entities, what are their relationships, what are the main themes.
+
+### Stage 4 — Map-Reduce Query
+
+For global questions, GraphRAG runs map-reduce over community summaries:
+
+<Mermaid chart={`
+flowchart TD
+    Q["'What are the main themes\nacross all customer feedback?'"] --> MAP["Map phase\nQuery each community summary:\n'What's relevant here?'"]
+    MAP --> C1["Community A:\nPricing concerns dominant"]
+    MAP --> C2["Community B:\nOnboarding friction"]
+    MAP --> C3["Community C:\nSupport response times"]
+    C1 & C2 & C3 --> REDUCE["Reduce phase\nSynthesize into final answer"]
+    REDUCE --> ANS["Comprehensive answer\nwith community attribution"]
+
+    style REDUCE fill:#14532d,color:#86efac
+`} />
+
+This is how GraphRAG answered my support ticket question correctly. Each community represented a cluster of related complaint types. The map phase asked each community "what are the themes here?" The reduce phase synthesized: pricing (38%), onboarding (27%), response times (21%), other (14%). That distribution came from the graph structure — something vector search cannot produce.
+
+---
+
+## GraphRAG vs LightRAG
+
+GraphRAG's primary weakness is cost. Community summarization at scale — 10,000 documents might produce 1,000 communities, each requiring an LLM call — is expensive.
+
+[LightRAG](https://github.com/HKUDS/LightRAG) (2024) addresses this:
+
+| | GraphRAG | LightRAG |
+|---|---|---|
+| Graph structure | Single-level communities | Low-level entities + high-level concepts |
+| Community detection | Louvain algorithm | Implicit via entity co-occurrence |
+| Summarization | Per-community LLM call | Batched, shared context |
+| Query modes | Global / Local | Naive / Local / Global / Hybrid |
+| Indexing cost | $$$ | $ (~1/100th) |
+| Quality vs GraphRAG | Baseline | 70–90% on most benchmarks |
+| Legal domain | Baseline | **+84.8% win rate** |
+
+That legal domain number is surprising enough that it deserves explanation. Why does a simpler, cheaper model outperform the more sophisticated one on legal text?
+
+Legal documents have explicit, consistent entity relationships. "Party A agrees to pay Party B within 30 days of..." — the entities and their relationships are stated directly, not inferred. GraphRAG's community detection adds overhead that legal text doesn't need: it groups entities into communities based on co-occurrence patterns, but the relationships in legal text are already structured. LightRAG's simpler entity co-occurrence approach captures these explicit relationships more accurately because it doesn't over-engineer the graph structure. The simpler model generalizes better when the input is already structured.
+
+---
+
+## Local vs Global Query Routing
+
+Both systems split queries into two modes:
+
+<Mermaid chart={`
+flowchart TD
+    Q["Incoming question"] --> CLASSIFY{"Query\nclassifier"}
+
+    CLASSIFY -->|"Local: specific entity/fact"| LOCAL["Vector search\nRetrieve relevant chunks\nfor specific entities"]
+    CLASSIFY -->|"Global: themes/patterns/summaries"| GLOBAL["Community summaries\nMap-reduce over\nrelevant communities"]
+
+    LOCAL --> MERGE["Context assembly"]
+    GLOBAL --> MERGE
+    MERGE --> GEN["LLM generates answer"]
+
+    style LOCAL fill:#1e3a5f,color:#93c5fd
+    style GLOBAL fill:#7c3aed,color:#e9d5ff
+    style GEN fill:#14532d,color:#86efac
+`} />
+
+**Local queries** — "What did Alice Johnson say about pricing?", "When was the company founded?" — specific entity/fact lookups, use vector search.
+
+**Global queries** — "What are the main themes in feedback?", "How is our AI strategy connected to our hiring?" — cross-document patterns, use community summaries.
+
+A simple LLM classifier (returns "local" or "global") routes the query to the right retrieval path.
+
+---
+
+## Setting Up LightRAG
+
+LightRAG integrates with Gemini and pgvector out of the box:
+
+```python {title:graph/lightrag_setup.py}
+from lightrag import LightRAG, QueryParam
+from lightrag.llm.google_genai import google_complete_if_cache, google_embedding
+
+rag = LightRAG(
+    working_dir='./rag_storage',
+    llm_model_func=google_complete_if_cache,
+    llm_model_name='gemini-2.0-flash',
+    embedding_func=google_embedding,
+    embedding_dim=768,
+    chunk_token_size=1200,
+    chunk_overlap_token_size=100,
+)
+
+await rag.ainsert(document_text)
+
+result = await rag.aquery(
+    "What are the main strategic themes across all board meeting notes?",
+    param=QueryParam(mode="hybrid", top_k=10),
+)
+```
+
+Hybrid mode (recommended) combines local + global retrieval. For most use cases, start here.
+
+For production systems with large corpora, use Neo4j as the graph backend. The key query for entity neighborhood retrieval:
+
+```cypher
+MATCH (e:Entity {name: $name})-[r*1..2]-(neighbor)
+RETURN DISTINCT neighbor.name AS entity,
+       [rel IN r | rel.type] AS relTypes
+LIMIT 50
+```
+
+This retrieves all entities within 2 hops of a named entity — the "neighborhood" used to build local query context.
+
+---
+
+## Resources
+
+- [From Local to Global: GraphRAG (arXiv:2404.16130)](https://arxiv.org/abs/2404.16130) — Microsoft's original paper
+- [LightRAG (arXiv:2410.05779)](https://arxiv.org/abs/2410.05779) — LightRAG architecture and benchmarks
+- [Louvain Community Detection (arXiv:0803.0476)](https://arxiv.org/abs/0803.0476)
+- [Microsoft GraphRAG GitHub](https://github.com/microsoft/graphrag)
+- [LightRAG GitHub](https://github.com/HKUDS/LightRAG)
+- [Neo4j Python Driver](https://neo4j.com/docs/api/python-driver/current/)
+
+---
+
+The question to ask before adding graph RAG: do your users ask questions that require connecting dots across multiple documents, or finding patterns in a corpus? If yes — thematic analysis, relationship queries, cross-document aggregation — build it. The indexing cost is real but the capability gap is larger.
+
+If your users ask questions that a good search would answer, graph RAG adds complexity without adding value. The right system is the simplest one that answers the actual questions being asked. Start with LightRAG's hybrid mode — it handles 70–90% of graph RAG use cases at 1% of GraphRAG's indexing cost. Add full GraphRAG with Neo4j only if you need deeper relationship reasoning, or if your corpus has the kind of dense, explicit entity structure (legal, medical, supply chain) where the graph is the point.

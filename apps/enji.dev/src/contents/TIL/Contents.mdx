@@ -1,18 +1,548 @@
 import TIL from '@/components/mdx/TIL';
 
-<TIL.Items date="2024-04-04">
+<TIL.Items date="2026-01-20">
 
   <TIL.Item>
-    
-    ## GCP Cloud Run deployment
+
+    ## RAGAS faithfulness formula
 
     <TIL.ItemTags>
-      <TIL.ItemTag>gcp</TIL.ItemTag>
-      <TIL.ItemTag>cloud-run</TIL.ItemTag>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>evals</TIL.ItemTag>
     </TIL.ItemTags>
 
-    Learned how to deploy full-stack backend services easily on GCP Cloud Run. Using Cloud SQL for PostgreSQL is a very smooth experience once you get the VPC configured correctly.
+    `Faithfulness = supported_claims / total_claims`. A score of 0.4 means 60% of what the model said is hallucination — not found in the retrieved context. Use a different, stronger model as the evaluator (Gemini Pro, GPT-4o) than the one being evaluated — same model judging itself has self-serving bias. Run evals in CI: block the merge if faithfulness drops below threshold after any prompt or retrieval change.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## pgvector MaxSim scoring for multimodal retrieval
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    ColPali encodes document pages as 1024 patch vectors (32×32 grid). MaxSim scoring: for each query token, find its best-matching document patch, then sum those best matches — `Score = Σᵢ maxⱼ(qᵢ · dⱼ)`. This is why it works for table queries: "Q3" finds the column header patch exactly, rather than averaging against all page text. Two-phase retrieval: ANN for 50 candidates, then exact MaxSim for re-ranking. At 1024 patches × 100 pages = 102,400 rows — use IVF index at that scale, not HNSW.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Batched deletes prevent table locks
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Deleting 90K rows in a single transaction locks the table and can crash replication on read replicas. Safe pattern: batches of 500 rows with a 200ms sleep between each batch. Batch times jumped from 1.2s to 8s mid-run — RDS Performance Insights showed page-level lock contention with the app's audit middleware writing adjacent rows. Fixed by increasing sleep to 500ms. Always watch, never just wait.
 
   </TIL.Item>
 
 </TIL.Items>
+
+<TIL.Items date="2025-12-12">
+
+  <TIL.Item>
+
+    ## Only the orchestrator owns flow control
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>architecture</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Giving a sub-agent the ability to decide "do I need more information?" is the fastest path to an infinite loop. An agent asked to decide whether more research is needed will decide yes — confidently, indefinitely. Fix: remove that authority entirely. Sub-agents are stateless fixed-step processors — they receive input, execute a defined pipeline, return output. The orchestrator decides what happens next. One agent with flow control authority, all others without.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Promise.allSettled vs Promise.all in agent fan-out
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>typescript</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `Promise.all` throws on the first rejection and discards all other results. In a multi-agent fan-out with 5 parallel workers, one rate limit failure kills the entire run. `Promise.allSettled` always resolves — filter for `status === 'fulfilled'` and proceed with what you have. Partial results are almost always better than no results. This is the difference between a resilient pipeline and a brittle one.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## LLM agent circuit breaker pattern
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Without a circuit breaker, a flaky external API causes the orchestrator to hammer it with retries, exhaust the token budget, and block everything else for minutes. Three states: Closed (normal, tracking failures), Open (fail fast, no calls made), Half-Open (probe with one request to test recovery). Configure `failureThreshold: 3`, `recoveryTimeout: 30s`, `successThreshold: 2` per external dependency. Wrap every external call — never silently absorb failures.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-11-08">
+
+  <TIL.Item>
+
+    ## LLM token budget management
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Reserve tokens for output before filling context with tool results. Pattern: `maxInputTokens = contextWindow - reservedOutput - systemPromptTokens`, then truncate tool results and retrieved chunks to fit. Truncate from the middle, not the end — beginning and end of context get more attention weight. Track `inputTokens` per agent run and alert when it exceeds 60% of the window. A 128K context window doesn't mean you can stuff 128K tokens of input.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Generative UI with Vercel AI SDK RSC streaming
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `createStreamableUI` lets the model stream React components — not just text — to the client. The Server Action creates a streamable, renders an initial placeholder, then updates it with real components as tool results arrive. Client receives JSX directly, not JSON that needs to be rendered. Result: the AI can render a data table, a booking confirmation, or a chart as part of the conversation. The component tree streams in progressively — no full page refresh, no custom serialization.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Zod schemas as inter-agent contracts
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+      <TIL.ItemTag>typescript</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Free-form text between agents means the downstream agent is doing prompt engineering just to parse the upstream agent's output. Zod schemas as contracts: every agent receives a `z.infer<typeof InputSchema>` and returns a `z.infer<typeof OutputSchema>`. Validate at every boundary with `schema.parse()` — if it fails, surface the error immediately rather than letting garbage propagate silently. Context poisoning (malformed upstream output corrupting downstream analysis) is only caught if you validate.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-10-09">
+
+  <TIL.Item>
+
+    ## generateObject for structured LLM output
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>typescript</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `generateObject` with a Zod schema constrains the model to produce valid structured output — no parsing, no regex extraction, no "sometimes it returns JSON and sometimes it doesn't." The model uses tool calling under the hood to enforce the schema. Pass `schemaDescription` to help the model understand each field. For nested objects, keep schemas flat when possible — deeply nested schemas increase the chance of the model getting a child field wrong while the parent looks correct.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## AI tool calling: never throw, always return
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    If a tool throws an unhandled exception, the entire stream crashes — the user gets an error with no context. Tools must catch all errors and return structured failure objects: `{ success: false, error: "Event at capacity" }`. The model reads this and communicates the failure in natural language. For atomic operations (capacity decrement, payment deduction): use database-level constraints, not application-level checks, to prevent race conditions under concurrent calls.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## LLM prompt caching break-even
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Anthropic prompt caching: writes cost 1.25× normal input price, reads cost 10%. Break-even is 1.4 reads per write — after that every read saves 90% on those tokens. Tool schemas are the ideal cache target: static, expensive (300 tokens × 50 tools = 15K tokens), and reused across thousands of calls. Critical constraint: static content (system prompt, tool schemas) must come before dynamic content (user message) — otherwise every call misses the cache because the prefix changes.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-09-05">
+
+  <TIL.Item>
+
+    ## Redis for LLM response caching
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Hash `SHA256(model + systemPrompt + userMessage)` as the cache key. Store the full response string with a TTL appropriate to how often the answer changes (FAQ answers: 24h, real-time data: 0). Cache miss rate in production FAQ chatbots is typically 30–50% after warmup — the other 50–70% of LLM costs disappear. Don't cache when the prompt includes user-specific data — the hash will never repeat and you're just burning memory.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Vercel AI SDK useChat streaming internals
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ai</TIL.ItemTag>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `useChat` maintains `messages`, `input`, `isLoading`, and `toolInvocations` state. It POSTs to your API route with the full messages array, reads the response as a data stream, and appends token chunks to the last assistant message in real time. `toolInvocations` shows pending and completed tool calls — useful for "⚡ Running book_ticket..." while the tool executes. The `onFinish` callback fires once the full response is assembled — use it for analytics, not for anything that blocks the stream.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-08-07">
+
+  <TIL.Item>
+
+    ## GitHub Actions matrix strategy for parallel test runs
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ci-cd</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `strategy.matrix` spins up parallel jobs for each value combination. Split a slow test suite across runners: `matrix: { shard: [1, 2, 3, 4] }`, then pass `--shard=${{ matrix.shard }}/4` to Vitest or Jest. Four runners run simultaneously — wall-clock time divided by 4. Cache `node_modules` with `actions/cache` keyed on `package-lock.json` hash — saves 30–60s per job. Also use matrix for cross-version testing: `node: [18, 20, 22]`.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## GitHub Actions environment protection for prod vs staging
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ci-cd</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Create two GitHub Environments: `staging` and `production`. Production environment gets required reviewers (1–2 approvers must approve before the deploy job runs) and deployment branch restrictions (only `main` can deploy to production). Staging deploys automatically on every push. Secrets are scoped per environment — `DATABASE_URL` in production points to the prod DB, in staging to the staging DB. The workflow uses `environment: production` on the deploy job to trigger the protection rules.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Turborepo pipeline caching
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>ci-cd</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Turborepo hashes task inputs (source files, env vars, dependency outputs) and caches task outputs. If the hash matches a previous run, the task is skipped and outputs are restored from cache. In a monorepo with 5 packages, changing one package only rebuilds that package and its dependents — not the whole tree. Enable remote caching with `npx turbo login`. CI cold runs go from 8 minutes to 90 seconds once the cache is warm.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## GCP Cloud Run deployment
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>ci-cd</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Learned how to deploy full-stack backend services on GCP Cloud Run. Using Cloud SQL for PostgreSQL is a smooth experience once you get the VPC connector configured correctly. Cloud Run integrates naturally into CI/CD — trigger a deploy on every push to `main` via a GitHub Actions step that runs `gcloud run deploy`, with the image built and pushed to Artifact Registry in the same workflow.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-07-10">
+
+  <TIL.Item>
+
+    ## Docker multi-stage builds
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Multi-stage builds separate the build environment from the runtime environment. Stage 1 (`FROM node:20 AS builder`): install all deps, run `next build`, produce `.next/standalone`. Stage 2 (`FROM node:20-alpine`): copy only the standalone output and public assets — no `node_modules`, no build tools, no source files. Result: image goes from ~1.2GB to ~150MB. Smaller image = faster cold start pull, smaller attack surface, lower registry storage costs.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## GCP Cloud Run + Cloud SQL via VPC connector
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Cloud Run connects to Cloud SQL over a private VPC, not a public IP. Steps: create a Serverless VPC Access connector in the same region, attach it to the Cloud Run service (`--vpc-connector`), use the Cloud SQL instance's private IP in the connection string. The Cloud SQL Auth Proxy handles IAM auth and TLS for local dev without exposing the DB publicly. Public IP + `0.0.0.0/0` in authorized networks is a configuration that should never reach production.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## GCP Secret Manager in Cloud Run
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Mount secrets as environment variables in Cloud Run — not hardcoded, not fetched at runtime in application code. In the Cloud Run service config, reference the secret version: `projects/PROJECT_ID/secrets/SECRET_NAME/versions/latest`. Cloud Run fetches and injects the value at container startup. The service account needs `roles/secretmanager.secretAccessor`. Rotate secrets in Secret Manager and redeploy — the new container gets the new value automatically.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-06-06">
+
+  <TIL.Item>
+
+    ## GCP Cloud Scheduler for cron jobs
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Cloud Scheduler sends HTTP requests on a cron schedule to any endpoint — Cloud Run, Cloud Functions, App Engine. Set up: create a scheduler job with a cron expression, target your Cloud Run service URL, add an OIDC token for authentication (the scheduler's service account must have `roles/run.invoker`). The endpoint must return 2xx within 10 minutes or the job is marked failed. For jobs that run longer: return 200 immediately and process asynchronously via Cloud Tasks.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Environment-gated feature flags without a service
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    For most teams, a full feature flag service is overkill. Simple pattern: `NEXT_PUBLIC_FEATURE_NEW_CHECKOUT=true` in `.env.production`, absent in `.env.staging`. Code checks `process.env.NEXT_PUBLIC_FEATURE_NEW_CHECKOUT === 'true'`. Staging gets the old flow, production gets the new one. When the rollout is done, delete the check and the env var. No dashboard to maintain, no SDK to add. Upgrade to a real service (LaunchDarkly, Statsig) when you need targeting by user segment — not before.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-05-08">
+
+  <TIL.Item>
+
+    ## Supabase Row Level Security policies
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Enable RLS on a table (`ALTER TABLE posts ENABLE ROW LEVEL SECURITY`) and all queries return zero rows by default until you add policies. Policy pattern for user-owned data: `CREATE POLICY "users see own posts" ON posts FOR SELECT USING (auth.uid() = user_id)`. The `USING` clause filters reads; `WITH CHECK` clause filters writes. Supabase injects `auth.uid()` from the JWT automatically. Test with `SET role = anon` in psql to verify anonymous users can't read protected rows.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## PgBouncer connection pooling modes
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    PostgreSQL has a hard limit on concurrent connections (typically 100–200 on RDS). Serverless functions that each open their own connection exhaust this instantly. PgBouncer multiplexes connections between the app and Postgres. Two key modes: **transaction mode** — connection held only for the duration of one transaction (highest reuse, incompatible with prepared statements), **session mode** — connection held for entire client session (safer, lower reuse). Supabase's pooler uses transaction mode — use it for serverless, direct connections for long-running services.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Webhook idempotency with event deduplication
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Webhook providers retry on timeout or non-2xx response. Your handler must be idempotent: processing the same event twice must produce the same result, not double-charge or double-provision. Pattern: store the event ID in a `processed_webhooks` table before processing. On receipt, check existence — if found, return 200 immediately. Use a database-level unique constraint on `event_id` to handle the race condition when two concurrent retries arrive simultaneously.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-04-10">
+
+  <TIL.Item>
+
+    ## EXPLAIN ANALYZE for query tuning
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `EXPLAIN ANALYZE` runs the query and shows actual vs estimated row counts, plus which nodes consume the most time. Seq Scan on a large table = missing index. Rows Removed by Filter in the thousands = the index exists but isn't selective enough. Nested Loop with high actual rows = the planner's row estimate is wrong — often means stale statistics, run `ANALYZE tablename`. Use `EXPLAIN (ANALYZE, BUFFERS)` to see cache hit rates: `shared hit` = memory, `shared read` = disk fetch.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## PostgreSQL partial indexes
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    A partial index includes only rows matching a WHERE clause. `CREATE INDEX idx_active ON users(email) WHERE status = 'active'` indexes only active users — if 95% of users are deactivated, the index is 20× smaller and fits in memory. The query planner uses it only when the query's WHERE clause is compatible. Partial indexes also work for uniqueness: `CREATE UNIQUE INDEX ON bookings(event_id) WHERE status != 'cancelled'` — prevents double-booking without blocking cancellation reuse.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Zero-downtime column additions in PostgreSQL
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Adding a `NOT NULL` column to a 50M-row table rewrites the entire table and locks it. Safe pattern: (1) add the column as `nullable` — instant, no lock, (2) backfill in batches with `UPDATE ... WHERE id BETWEEN x AND y`, (3) add the constraint with `ADD CONSTRAINT ... NOT VALID` then `VALIDATE CONSTRAINT` separately — Postgres 12+ validates without a full table scan, safe under live traffic. Each step is independently reversible.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-03-06">
+
+  <TIL.Item>
+
+    ## LCP optimization with next/image and preload
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    LCP is almost always the largest image or the hero text block. For hero images: `<Image priority />` generates a `<link rel="preload">` in the `<head>` — the browser fetches it before the JS bundle finishes parsing. The `sizes` prop prevents downloading a 1600px image for a 400px slot: `sizes="(max-width: 768px) 100vw, 50vw"`. `next/image` automatically serves WebP/AVIF. Verify with Lighthouse — LCP should be under 2.5s on a simulated 4G connection.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## CDN cache control for static assets
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+      <TIL.ItemTag>devops</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `Cache-Control: public, max-age=31536000, immutable` tells the CDN and browser to cache forever. Safe only for content-addressed assets (filename includes a hash). For HTML pages: `Cache-Control: public, s-maxage=60, stale-while-revalidate=86400` — CDN serves stale while revalidating in the background. `stale-while-revalidate` means users never wait for a cache miss. `s-maxage` applies to CDN only; `max-age` applies to both CDN and browser.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Streaming SSE with Next.js Route Handlers
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Return a `ReadableStream` from a Route Handler to stream server-sent events to the client. Set `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`. On the client, use `EventSource` or parse the `ReadableStream` from `fetch` with a reader loop. Vercel AI SDK's `toDataStreamResponse()` handles all of this internally — but knowing the underlying mechanism matters when you need custom streaming outside AI use cases.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-02-07">
+
+  <TIL.Item>
+
+    ## Next.js bundle analysis
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `@next/bundle-analyzer` generates a treemap of every module in every chunk. Run with `ANALYZE=true next build`. Common findings: `moment.js` (330KB) when you only need date formatting — use `date-fns` instead; `lodash` fully imported when you need one function — use `lodash-es` with tree shaking; large icon libraries where only 3 icons are used. The client bundle is what users download and parse — every KB there costs more than a KB on the server.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## React lazy loading and Suspense boundaries
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>react</TIL.ItemTag>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `React.lazy(() => import('./Chart'))` combined with `<Suspense fallback={<Spinner />}>` defers the chart bundle until the component is in the render tree. The fallback renders immediately; the real component renders once the chunk loads. Multiple lazy components under one Suspense boundary share one loading state — nest boundaries if you want independent loading states. Avoid lazy-loading components in hot render paths — the async chunk load adds visible latency.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Next.js dynamic imports for code splitting
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `dynamic(() => import('./HeavyComponent'))` defers the bundle for that component until it's actually rendered. Critical for components that import large libraries — chart libraries, rich text editors, PDF viewers. Add `{ ssr: false }` for browser-only components to skip SSR entirely. Wrap in `<Suspense fallback={<Skeleton />}>` for graceful loading states. Check impact with `@next/bundle-analyzer` — identify which chunks are largest and whether lazy loading them reduces initial JS parse cost.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2025-01-09">
+
+  <TIL.Item>
+
+    ## Next.js middleware for edge authentication
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Middleware runs at the edge before the cache is consulted — it can redirect unauthenticated users before a single byte of the protected page is served. Validate the JWT in `middleware.ts` using the Web Crypto API (available at edge runtime, no Node.js cold start). Keep middleware lean — it runs on every matched request. Don't fetch from a database in middleware; validate the token signature locally and let the page's data fetching do authorization checks against the DB.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Next.js on-demand ISR with revalidateTag
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>backend</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Tag your `fetch` calls: `fetch(url, { next: { tags: ['products'] } })`. In a Server Action or API route, call `revalidateTag('products')` to immediately invalidate all cached responses tagged with `'products'` across all pages. More surgical than `revalidatePath` — one CMS publish revalidates exactly the data that changed, not entire pages. For pages with multiple data sources, use multiple tags and revalidate only the tag that changed.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Next.js Partial Prerendering (PPR)
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>performance</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    PPR serves a static HTML shell instantly from the CDN edge, with dynamic "holes" streamed in via Suspense boundaries. The static shell includes layout, nav, and anything that doesn't change per user. Dynamic content (user-specific data, real-time counts) streams into the Suspense fallback slots. Result: the page is never blank, LCP is the static shell's paint time, and dynamic content arrives progressively. Enable with `experimental.ppr: true` in `next.config.js`.
+
+  </TIL.Item>
+
+</TIL.Items>
+

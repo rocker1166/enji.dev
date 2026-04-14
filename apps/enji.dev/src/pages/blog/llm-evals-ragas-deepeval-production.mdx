@@ -1,0 +1,223 @@
+---
+title: LLM Evals That Actually Catch Problems Before Production Does
+description: Stop vibe-checking your LLM app. RAGAS, DeepEval, and PromptFoo for evals that catch regressions before production does.
+date: '2026-04-10'
+lang: en
+tags:
+  - ai-agents
+  - typescript
+  - postgresql
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+Two weeks after launching a RAG chatbot, a user asked about our refund policy.
+
+The model returned a confident, well-formatted, completely wrong answer. It cited a policy we'd changed three months ago. The correct document was in the knowledge base. The retriever pulled the old one instead because the similarity scores were close and we'd never tested this case. We hadn't tested any cases systematically — we'd "vibe-checked" it in development and shipped.
+
+I fixed the retriever bug in two hours. Adding it to an eval suite so it could never silently regress took another two days. That two days was the most valuable engineering I did that month.
+
+**This is the insight I wish I'd had before building the pipeline: build your test dataset before you build your system.** The test dataset is how you know when you've fixed something. It's how you know when a model upgrade broke something. It's how you catch the refund policy bug before a user does.
+
+---
+
+## Which Tool for Which Job
+
+Before the metrics: the question everyone searching for this post actually has.
+
+| Tool | Use it for |
+|---|---|
+| **RAGAS** | Measuring your RAG pipeline health — retrieval quality, faithfulness, answer correctness |
+| **DeepEval** | Assertion-based testing with pass/fail thresholds — integrates with pytest, blocks CI |
+| **PromptFoo** | A/B testing prompt changes — run old vs new prompt across your test suite before shipping |
+
+These are not alternatives — they're layers. RAGAS gives you the metrics. DeepEval enforces thresholds in CI. PromptFoo validates prompt changes before they merge.
+
+---
+
+## Why LLM Eval Is Structurally Different
+
+Unit testing a function: given input X, assert output equals Y. LLM outputs don't work that way. "Paris" and "The capital of France is Paris" are both correct. String equality fails one of them.
+
+You need metrics that assess *quality* along multiple dimensions:
+
+<Mermaid chart={`
+flowchart LR
+    Q["Question"] --> R["Retriever"]
+    R --> C["Context chunks"]
+    C --> G["Generator"]
+    Q --> G
+    G --> A["Answer"]
+
+    C -.->|"Did we retrieve\nthe right chunks?"| M1["Retrieval Quality\nPrecision · Recall"]
+    A -.->|"Did the answer\nuse the context?"| M2["Generation Quality\nFaithfulness · Relevancy"]
+    Q & A -.->|"Is it correct\nend to end?"| M3["End-to-End\nAnswer Correctness"]
+
+    style M1 fill:#1e3a5f,color:#93c5fd
+    style M2 fill:#7c3aed,color:#e9d5ff
+    style M3 fill:#14532d,color:#86efac
+`} />
+
+When faithfulness drops, the generator is hallucinating. When context precision drops, the retriever is pulling noise. When context recall drops, the retriever is missing key information. The metrics tell you *where* the problem is — not just *that* there's a problem.
+
+---
+
+## RAGAS — Five Metrics That Map to Your Pipeline
+
+[RAGAS](https://docs.ragas.io) (arXiv:2309.15217) defines five metrics, each measuring a specific component.
+
+**Faithfulness** — Are the model's claims actually supported by retrieved context?
+```text
+Faithfulness = (claims supported by context) / (total claims in answer)
+```
+Score of 0.4 means 60% of what the model said is hallucination. This is your primary anti-hallucination signal.
+
+**Context Precision** — Are the top-ranked retrieved chunks actually relevant? Low precision means the generator is trying to work with noise — it will either ignore it or hallucinate around it.
+
+**Context Recall** — Does retrieved context contain everything needed to answer? For each statement in ground truth, checks whether it's present in the context. Low recall means your retriever is missing key information entirely.
+
+**Answer Relevancy** — Is the answer addressing the question asked? Catches answers that are technically accurate but off-topic.
+
+**Answer Correctness** — Is the final answer factually correct vs ground truth? This is the end-to-end metric. The others tell you *where* things broke; this tells you *if* they broke.
+
+```python {title:evals/ragas_eval.py}
+from ragas import evaluate
+from ragas.metrics import (
+    faithfulness, answer_relevancy,
+    context_precision, context_recall, answer_correctness,
+)
+from ragas.llms import LangchainLLMWrapper
+from langchain_google_genai import ChatGoogleGenerativeAI
+from datasets import Dataset
+
+evaluator_llm = LangchainLLMWrapper(
+    ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+)
+
+dataset = Dataset.from_list(test_cases)
+result = evaluate(dataset=dataset, metrics=[
+    faithfulness, answer_relevancy,
+    context_precision, context_recall, answer_correctness,
+], llm=evaluator_llm, raise_exceptions=False)
+```
+
+<Callout variant="info">
+RAGAS uses an LLM to evaluate LLM outputs — "LLM-as-judge." Use Gemini Pro or GPT-4o as the judge, not the same model you're evaluating. Keep them separate to avoid self-serving bias.
+</Callout>
+
+---
+
+## DeepEval — Threshold-Based Assertions
+
+[DeepEval](https://github.com/confident-ai/deepeval) wraps these metrics in a pytest-style framework with explicit pass/fail thresholds. Instead of watching numbers, you write assertions:
+
+<Mermaid chart={`
+flowchart LR
+    TC["Test Case\n(question + answer\n+ contexts)"] --> M1["FaithfulnessMetric\nthreshold: 0.7"]
+    TC --> M2["RelevancyMetric\nthreshold: 0.8"]
+    TC --> M3["HallucinationMetric\nthreshold: 0.2"]
+    M1 & M2 & M3 --> PASS{"All\npassed?"}
+    PASS -->|Yes| GREEN["✅ Test passes"]
+    PASS -->|No| RED["❌ Test fails\nCI blocked"]
+
+    style GREEN fill:#14532d,color:#86efac
+    style RED fill:#7f1d1d,color:#fca5a5
+`} />
+
+Each test case runs your actual RAG system, collects the output and retrieved contexts, then asserts all metrics pass. If faithfulness drops below threshold after a model upgrade or retriever change, CI fails before the code ships. The refund policy bug I described in the intro would have been caught by a faithfulness assertion — the model was stating something not in the retrieved context.
+
+---
+
+## Building a Test Dataset That Actually Catches Problems
+
+A test dataset built from cases your system already handles well is useless. You need adversarial examples — cases where the system will fail if anything is slightly wrong.
+
+| Test Case Type | What It Catches |
+|---|---|
+| **Out-of-scope questions** | "When does the feature ship?" — no answer in KB |
+| **Cross-document reasoning** | "Compare Plan A and Plan B pricing" — requires 2 docs |
+| **Ambiguous questions** | "How do I fix this?" — no context given |
+| **Trap questions** | Queries that sound answerable but aren't |
+| **Real failures from production** | Cases users actually reported as bad |
+| **Synthetic adversarial** | LLM-generated edge cases from your docs |
+
+For synthetic generation: give Gemini a document excerpt and ask for test questions where at least one requires reasoning (not just extraction), one spans multiple facts, and one would be incorrectly answered by a naive system.
+
+Every time a user reports a bad response, add it to the test set before you fix the bug. That's how the test suite grows into an actual safety net rather than a set of cases you already handle.
+
+---
+
+## PromptFoo — A/B Testing Prompts
+
+Before you change your system prompt, [PromptFoo](https://promptfoo.dev) lets you test the new prompt against the old one across your entire test suite:
+
+<Mermaid chart={`
+flowchart TD
+    P1["Prompt v1 (current)"] --> RUN["PromptFoo runs\nboth prompts on\nall test cases"]
+    P2["Prompt v2 (proposed)"] --> RUN
+    RUN --> SCORE["Score each assertion:\ncontains · llm-rubric · length"]
+    SCORE --> COMPARE["Side-by-side comparison\nPass rate: 73% → 91%"]
+    COMPARE --> DECIDE{"Improvement\nconfirmed?"}
+    DECIDE -->|Yes| DEPLOY["Ship prompt v2"]
+    DECIDE -->|No| REVERT["Keep prompt v1"]
+`} />
+
+The rule: run `npx promptfoo eval` before merging any prompt change. I've seen prompt "improvements" that boosted helpfulness on the test cases the author had in mind while breaking edge cases nobody thought of. PromptFoo catches this.
+
+---
+
+## CI/CD Integration
+
+The point of evals is catching regressions automatically — not running them manually every sprint:
+
+<Mermaid chart={`
+flowchart LR
+    PR["Pull Request\n(prompt or pipeline change)"] --> CI["GitHub Actions"]
+    CI --> BUILD["Run RAG system\nagainst test dataset"]
+    BUILD --> RAGAS_RUN["Compute RAGAS scores"]
+    RAGAS_RUN --> CHECK{"All metrics\nabove threshold?"}
+    CHECK -->|Yes| COMMENT["Post scores to PR\n✅ Faithfulness: 0.87\n✅ Relevancy: 0.91"]
+    CHECK -->|No| BLOCK["Block merge\n❌ Faithfulness: 0.61\n(threshold: 0.70)"]
+
+    style COMMENT fill:#14532d,color:#86efac
+    style BLOCK fill:#7f1d1d,color:#fca5a5
+`} />
+
+Every PR that touches prompts, retrieval logic, or model configuration must pass. Post scores as a PR comment — the history of scores is a record of how the system has changed over time.
+
+---
+
+## Threshold Reference
+
+Starting points — adjust upward as your system matures:
+
+| Metric | Customer Support | Technical Docs | Financial Data |
+|---|---|---|---|
+| Faithfulness | ≥ 0.85 | ≥ 0.90 | ≥ 0.95 |
+| Answer Relevancy | ≥ 0.80 | ≥ 0.85 | ≥ 0.85 |
+| Context Precision | ≥ 0.70 | ≥ 0.75 | ≥ 0.80 |
+| Context Recall | ≥ 0.75 | ≥ 0.80 | ≥ 0.85 |
+
+Financial data needs higher faithfulness — a hallucinated figure is a liability issue. Start lower and raise thresholds as the system improves. Starting too high blocks every PR from day one.
+
+<Callout variant="warning">
+Faithfulness of 0.92 doesn't mean 8% of answers are wrong — it means 8% of claims couldn't be verified against retrieved context. Some may still be correct (the model has accurate prior knowledge). Evals track direction and catch regressions; they don't replace human review for high-stakes outputs.
+</Callout>
+
+---
+
+## Resources
+
+- [RAGAS: Automated Evaluation of RAG (arXiv:2309.15217)](https://arxiv.org/abs/2309.15217)
+- [LLM-as-Judge Survey (arXiv:2512.05700)](https://arxiv.org/abs/2512.05700)
+- [RAGAS documentation](https://docs.ragas.io)
+- [DeepEval GitHub](https://github.com/confident-ai/deepeval)
+- [PromptFoo](https://promptfoo.dev)
+- [Braintrust](https://www.braintrustdata.com) — Hosted eval tracking with dashboards
+- [Langfuse](https://langfuse.com) — Open-source LLM observability with eval support
+
+---
+
+The pipeline is easy to replace. Your test dataset is not. A well-built dataset of adversarial cases, real failures, and cross-document reasoning challenges took months to accumulate and represents all the ways your system can fail. It's the thing that lets you upgrade models, swap retrievers, and change prompts without calling users to apologize. Build it first. Build it before you build the pipeline. It's the most important engineering artifact in an LLM application, and almost nobody treats it that way.

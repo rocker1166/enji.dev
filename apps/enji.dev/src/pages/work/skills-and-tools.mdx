@@ -1,17 +1,249 @@
 ---
 title: Skills and Tools
-description: A look at all the programming languages, libraries, and tools I've worked with.
+description: The tech stack, AI tools, and infrastructure behind my work as a full-stack developer and LLM application engineer.
 caption: Work
 layout: PageWithMDX
 ---
 
-I am a 3rd-year CSE (AI/ML) student focusing on Full-Stack Development and AI integration.
+import Labels, { Label } from '@/components/mdx/Labels';
+import { InlineHighlight } from '@/components/mdx/InlineHighlight';
+
+I'm a final-year CSE (AI/ML) student who ships production software. Not side projects — actual products with real users, production databases, and paying stakeholders. My technical identity sits at the intersection of **full-stack engineering** and **LLM-powered application development**.
+
+Here's the honest version: I'm strong at building things quickly with TypeScript and Next.js, I understand multi-agent system architecture well enough to win international hackathons with it, and I'm one of the few people actively building with **Google Gemini's Live API for real-time voice AI**. I'm not a machine learning researcher — I don't train models from scratch, and listing TensorFlow to pad a resume isn't something I do.
 
 ---
 
-## Technical Skills
+## Full-Stack Developer
 
-- **Languages:** JavaScript, TypeScript, HTML5, CSS3, Python, C, C++
-- **Libraries & Frameworks:** React.js, Next.js, Redux, Node.js, Socket.io, Express.js, FastAPI, Chakra UI, Bootstrap, Tailwind CSS, Aceternity UI, Nest.js, Vercel AI SDK, Langchain, React Native, n8n, Huggingface, TensorFlow
-- **Tools & Platforms:** VS Code, Netlify, Vercel, Git, GitHub, GitLab, Firebase, Supabase, Postman, Swagger, GitHub Actions, AWS, Slack
-- **Databases:** MongoDB, MySQL, SQLite, PostgreSQL
+Everything started with the frontend. The discipline of building something that renders fast, feels right, and handles edge cases gracefully is what got me into engineering — and it still shapes how I think about the whole stack.
+
+I gravitated toward **component-driven architecture** early. React and Next.js became the lens through which I see every web problem. Over time I moved further down the stack: REST and streaming APIs, PostgreSQL under production load, NestJS for structured backend services, and CI/CD for actually shipping things reliably.
+
+### TypeScript
+
+TypeScript is the language I think in. I've been writing it across every project for 3+ years — frontend, backend, agent pipelines, API routes. The type safety is especially critical in multi-agent systems where data contracts between components cannot be ambiguous.
+
+### React & Next.js
+
+My primary tool for every web product. I've built AI-powered learning platforms, streaming chatbot UIs, enterprise dashboards, and marketing sites with Next.js. I'm comfortable with App Router, Pages Router, edge functions, server components, and the tradeoffs between them.
+
+### Node.js · Express.js · NestJS
+
+I use Express for lightweight services and NestJS for production-grade backends where you actually want dependency injection, guards, interceptors, and proper module boundaries. Both have been in production deployments.
+
+### Tailwind CSS
+
+I rarely touch raw CSS anymore. The constraint-based system produces more consistent UIs at higher velocity. For complex motion work I layer in Framer Motion.
+
+---
+
+## LLM Application Engineer
+
+This is the area I've invested most heavily in over the past year. I build AI systems that go beyond wrapping a chat API — multi-agent pipelines, voice-to-voice interfaces, tool-augmented reasoning systems, and RAG architectures that hold up against real data.
+
+The mental model that unlocked this for me: **LLMs are reasoning engines, not text generators.** Design around that — structured outputs, deterministic tool execution, observable state, measurable evals — and you build systems that are actually reliable.
+
+### Google Gemini SDK · Live API
+
+This is where I'm doing the most novel work right now. The **Gemini Live API** enables real-time bidirectional voice conversation — full voice-to-voice communication with sub-500ms latency, streaming audio in and out simultaneously over WebSocket. I've built voice interfaces with tool calling baked in: the model can interrupt itself to execute a function, receive the result, and continue speaking without breaking the conversation flow. This is genuinely different from the text-then-TTS pattern most people use.
+
+Beyond voice: I use Gemini Pro for multi-turn chat, `generateContent` with tool declarations for structured agent tasks, and function calling for integrating LLM reasoning with real APIs.
+
+### Vercel AI SDK
+
+The cleanest abstraction for AI-powered web UIs. `streamText`, `generateObject`, `useChat`, `useCompletion` — all of it in production. The streaming primitives make chatbot UIs feel instant. The provider-agnostic design means I can swap models without rewriting UI code.
+
+### LangChain · LangGraph
+
+LangChain for document ingestion pipelines and RAG systems. LangGraph for **stateful multi-agent workflows** where agents need to loop, branch, and hand off work with persistent state between steps. The graph-based model for agent orchestration is significantly more debuggable than ad-hoc agent loops.
+
+### Multi-Agent Architecture
+
+Designing systems where multiple specialized LLM agents collaborate — orchestrator patterns, fan-out/fan-in pipelines, Zod-validated inter-agent contracts, structured handoffs with no free-form text passing between agents. The 100agentdev win (1st place, 600+ teams) validated this approach under competitive pressure.
+
+### Vector Databases · RAG
+
+Building retrieval systems that actually work: embedding pipelines, similarity search with pgvector or Pinecone, chunking strategies, and reranking. The naive RAG implementation works in demos; production RAG needs chunk overlap tuning, metadata filtering, and hybrid search.
+
+### Prompt Engineering · LLM Evals
+
+System prompt architecture, few-shot examples, chain-of-thought structuring, and output validation. I use structured generation (Zod + `generateObject`) wherever possible instead of hoping the model formats its response correctly. Evaluating LLM outputs with deterministic test cases before shipping.
+
+---
+
+## Backend & Infrastructure
+
+Production is where assumptions die. I've run database operations under live traffic, wired CI/CD for multi-service deployments, and learned — the hard way, at 3 AM — what it means to have a bug in a production system handling real user data.
+
+### PostgreSQL · Supabase
+
+Postgres is my default database. I understand indexes, query planning, row-level security, and `VACUUM`. I've used Supabase for real-time subscriptions in dashboards, and run batched PII deletions on a live production database (90K records, zero downtime).
+
+### MongoDB
+
+Document storage for flexible schemas — conversation history, org config, unstructured event data. Mongoose for schema validation and query composition in Node.js services.
+
+### Redis
+
+Session caching, rate limiting, pub/sub for real-time features, and BullMQ for background job queues in NestJS. Not just `get`/`set` — I understand eviction policies and when Redis is the wrong tool.
+
+### GitHub Actions · CI/CD
+
+I build pipelines from scratch: lint → type-check → test → build → deploy. Configured for Next.js → Vercel and Node.js backends → AWS EC2. I've also configured GitLab CI for containerized deployments.
+
+### AWS · Vercel
+
+Vercel for frontend (zero-config, edge functions, preview deployments). AWS for backend: EC2, RDS (Postgres), S3, CloudWatch monitoring. I'm comfortable here at the operational level — not an infrastructure engineer, but I can own a deployment without hand-holding.
+
+### Firebase
+
+Auth (OAuth + email/password), Firestore, and Realtime Database for the AI learning platform at LastMinuteEngineering. Firebase Auth for session management across web clients.
+
+---
+
+## Detail and Summary
+
+I represent all data in labels to make it easier to read. The <InlineHighlight color="blue">underline indicator</InlineHighlight> shows how often I use the related item:
+
+<Labels title="Legend">
+  <Label indicator={100}>Frequently Used</Label>
+  <Label indicator={25}>Occasionally</Label>
+</Labels>
+
+### Programming Languages
+
+<div className="flex flex-col gap-4">
+  <Labels title="Primary">
+    <Label indicator={100}>TypeScript</Label>
+    <Label indicator={95}>JavaScript</Label>
+    <Label indicator={50}>Python</Label>
+    <Label indicator={65}>SQL</Label>
+  </Labels>
+  <Labels title="Others">
+    <Label indicator={70}>HTML5</Label>
+    <Label indicator={70}>CSS3</Label>
+    <Label indicator={25}>C</Label>
+    <Label indicator={25}>C++</Label>
+  </Labels>
+</div>
+
+### AI & LLM Stack
+
+<div className="flex flex-col gap-4">
+  <Labels title="Google AI">
+    <Label indicator={90}>Gemini SDK</Label>
+    <Label indicator={85}>Gemini Live API</Label>
+    <Label indicator={85}>Gemini Tool Calling</Label>
+  </Labels>
+  <Labels title="Core AI">
+    <Label indicator={95}>Vercel AI SDK</Label>
+    <Label indicator={80}>LangChain</Label>
+    <Label indicator={75}>LangGraph</Label>
+    <Label indicator={60}>Hugging Face</Label>
+  </Labels>
+  <Labels title="RAG & Search">
+    <Label indicator={70}>pgvector</Label>
+    <Label indicator={60}>Pinecone</Label>
+    <Label indicator={75}>RAG Pipelines</Label>
+  </Labels>
+  <Labels title="Practice">
+    <Label indicator={85}>Prompt Engineering</Label>
+    <Label indicator={65}>LLM Evals</Label>
+    <Label indicator={90}>Multi-Agent Design</Label>
+  </Labels>
+</div>
+
+### Frontend
+
+<div className="flex flex-col gap-4">
+  <Labels title="Core">
+    <Label indicator={100}>Next.js</Label>
+    <Label indicator={100}>React</Label>
+    <Label indicator={100}>Tailwind CSS</Label>
+    <Label indicator={85}>Framer Motion</Label>
+  </Labels>
+  <Labels title="UI Libraries">
+    <Label indicator={80}>Shadcn UI</Label>
+    <Label indicator={75}>Aceternity UI</Label>
+    <Label indicator={65}>Chakra UI</Label>
+    <Label indicator={40}>Material UI</Label>
+  </Labels>
+  <Labels title="State & Data">
+    <Label indicator={75}>Redux</Label>
+    <Label indicator={70}>Zustand</Label>
+    <Label indicator={65}>React Query</Label>
+    <Label indicator={60}>SWR</Label>
+  </Labels>
+</div>
+
+### Backend
+
+<div className="flex flex-col gap-4">
+  <Labels title="Frameworks">
+    <Label indicator={90}>Node.js</Label>
+    <Label indicator={85}>Express.js</Label>
+    <Label indicator={80}>NestJS</Label>
+    <Label indicator={50}>FastAPI</Label>
+  </Labels>
+  <Labels title="Real-time">
+    <Label indicator={70}>Supabase Realtime</Label>
+    <Label indicator={65}>Socket.io</Label>
+    <Label indicator={60}>Firebase RTDB</Label>
+    <Label indicator={85}>WebSocket / SSE</Label>
+  </Labels>
+</div>
+
+### Databases
+
+<div className="flex flex-col gap-4">
+  <Labels title="Relational">
+    <Label indicator={85}>PostgreSQL</Label>
+    <Label indicator={70}>pgvector</Label>
+    <Label indicator={45}>MySQL</Label>
+  </Labels>
+  <Labels title="NoSQL & Cache">
+    <Label indicator={85}>MongoDB</Label>
+    <Label indicator={70}>Redis</Label>
+    <Label indicator={80}>Supabase</Label>
+    <Label indicator={75}>Firebase Firestore</Label>
+  </Labels>
+</div>
+
+### DevOps & Cloud
+
+<div className="flex flex-col gap-4">
+  <Labels title="CI/CD">
+    <Label indicator={80}>GitHub Actions</Label>
+    <Label indicator={55}>GitLab CI</Label>
+    <Label indicator={45}>Docker</Label>
+  </Labels>
+  <Labels title="Cloud">
+    <Label indicator={80}>Vercel</Label>
+    <Label indicator={60}>AWS</Label>
+    <Label indicator={70}>Firebase</Label>
+    <Label indicator={40}>Netlify</Label>
+  </Labels>
+</div>
+
+### Tools & Platforms
+
+<div className="flex flex-col gap-4">
+  <Labels title="Dev Tools">
+    <Label indicator={100}>VS Code</Label>
+    <Label indicator={100}>Git</Label>
+    <Label indicator={100}>GitHub</Label>
+    <Label indicator={90}>Postman</Label>
+    <Label indicator={75}>Swagger</Label>
+    <Label indicator={65}>Figma</Label>
+  </Labels>
+  <Labels title="Observability">
+    <Label indicator={60}>Sentry</Label>
+    <Label indicator={55}>AWS CloudWatch</Label>
+  </Labels>
+  <Labels title="Other">
+    <Label indicator={85}>Claude Code</Label>
+    <Label indicator={60}>Prisma ORM</Label>
+    <Label indicator={55}>Stripe API</Label>
+  </Labels>
+</div>

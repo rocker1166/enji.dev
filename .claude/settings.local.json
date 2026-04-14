@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.codewarnab.in)",
+      "WebFetch(domain:enji.dev)",
+      "Bash(python3 -c \"s='How to safely purge 90K PII records from a live Postgres database with zero downtime using batched deletes and audit trails.'; print\\(len\\(s\\)\\)\")",
+      "Bash(node -e \"console.log\\('Safely deleting 90K PII records from live Postgres with zero downtime, batched deletes, and a complete audit trail.'.length\\)\")",
+      "Bash(grep -n 'data-title=\\\\|^```$' apps/enji.dev/src/pages/blog/deleting-90k-pii-records-zero-downtime-postgres.mdx)",
+      "Bash(grep -rn '^```$' apps/enji.dev/src/pages/blog/)",
+      "Bash(pnpm add:*)",
+      "Bash(node -e \"require\\('./src/components/mdx/Mermaid.tsx'\\)\")",
+      "Bash(node -e \"console.log\\('A look at the programming languages, frameworks, AI tools, and infrastructure I\\\\\\\\'ve worked with across full-stack and AI engineering.'.length\\)\")",
+      "Bash(node -e \"console.log\\('The tech stack, AI tools, and infrastructure behind my work as a full-stack developer and AI systems engineer.'.length\\)\")",
+      "Bash(node -e \"console.log\\('The tech stack, AI tools, and infrastructure behind my work as a full-stack developer and LLM application engineer.'.length\\)\")",
+      "WebSearch",
+      "WebFetch(domain:proceedings.iclr.cc)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:docs.cloud.google.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.langchain.com)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:deepeval.com)",
+      "WebFetch(domain:docs.ragas.io)",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"console.log\\('50 tools kill your token budget. Dynamic selection, schema compression, and routing for production AI agents.'.length\\)\")"
+    ]
+  }
+}

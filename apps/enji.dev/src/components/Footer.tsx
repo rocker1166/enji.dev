@@ -13,7 +13,7 @@ import dayjs from '@/utils/dayjs';
 function LastUpdate() {
   return (
     <a
-      href="https://github.com/sumanj/enji.dev"
+      href="https://github.com/rocker1166/enji.dev"
       target="_blank"
       rel="noreferrer nofollow"
       className={clsx('hover:underline')}
@@ -130,7 +130,7 @@ function FooterDescription() {
         </li>
         <li>
           <a
-            href="https://github.com/sumanj"
+            href="https://github.com/rocker1166"
             target="_blank"
             rel="noreferrer nofollow"
             className={clsx('flex h-9 w-9 items-center justify-center')}
@@ -225,7 +225,7 @@ function Footer() {
                     },
                     {
                       title: 'Source Code',
-                      href: 'https://github.com/sumanj/enji.dev',
+                      href: 'https://github.com/rocker1166/enji.dev',
                       isInternal: false,
                     },
                     {

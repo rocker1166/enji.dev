@@ -1,0 +1,217 @@
+---
+title: How I Built an AI Agent System for Enterprise Supply Chain Intelligence
+description: IntelliSupply — LLM agents, graph simulation, and structured handoffs for supply chain disruption prediction.
+date: '2026-02-10'
+lang: en
+tags:
+  - ai-agents
+  - nextjs
+  - typescript
+  - supabase
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+The first version of IntelliSupply had one agent. It received supply chain data, signals from external sources, and the instruction to "analyze this and recommend mitigation strategies."
+
+It was impressive in demos. It was useless in production.
+
+The agent would hallucinate delay estimates. It would produce recommendations that were logically structured but mathematically wrong — "rerouting through Supplier Y saves 3 days" when the supply graph made that physically impossible. When I traced the bad outputs, I found the same root cause every time: the LLM was doing math. It would reason about delay cascades, calculate propagation through the supply chain, and arrive at confident wrong numbers.
+
+The fix sounds obvious in hindsight but took me longer than it should to accept:
+
+> **Use LLMs for language. Use algorithms for math.**
+
+These are not interchangeable roles. The moment I stopped asking the LLM to compute delay cascades and gave that job to a deterministic BFS algorithm, the outputs became reliable enough to actually use.
+
+---
+
+## The Four Components
+
+Before the architecture: what we're actually building.
+
+| Component | What It Does |
+|---|---|
+| **Digital Twin** | A live graph model of your supply chain (suppliers → warehouses → distributors → customers) |
+| **Risk Agents** | Monitor external signals (news, weather, financials) and flag potential disruptions |
+| **Simulation Engine** | When a risk is flagged: run "what-if" scenarios on the supply graph |
+| **Recommendation Engine** | Translate simulation outputs into actionable mitigations |
+
+The LLM touches the first step (risk scoring from text signals) and the last step (generating human-readable recommendations). The simulation — the part that requires math — is entirely deterministic.
+
+---
+
+## Why Not One Big Agent?
+
+My first instinct was a single "supply chain expert" LLM agent with all the context. It failed for three reasons beyond the math problem:
+
+- **Context overload** — a real supply chain graph with 200+ nodes doesn't fit in a prompt
+- **Reliability** — a monolithic agent hallucinates more; no structured validation between steps
+- **Debuggability** — when it gives a wrong recommendation, you can't tell which step went wrong
+
+The right approach: **specialist agents with structured Zod-validated handoffs**.
+
+<Mermaid chart={`
+flowchart TD
+    O["🎯 Orchestrator\ncoordinates · routes · escalates"]
+
+    O -->|"signals"| RM["🔍 Risk Monitor\nscores severity"]
+    O -->|"medium+ risk"| SIM["⚙️ Simulation\ngraph traversal · impact"]
+    O -->|"high/critical"| REC["💡 Recommendation\ngenerates mitigations"]
+
+    RM --> DB[("Supabase\nEvent Store")]
+    SIM --> DB
+    REC --> DB
+    DB -->|"Realtime subscription"| DASH["Live Dashboard"]
+
+    style O fill:#7c3aed,color:#e9d5ff
+    style DB fill:#1e3a5f,color:#93c5fd
+    style DASH fill:#14532d,color:#86efac
+`} />
+
+Each agent receives a Zod-validated input and produces a Zod-validated output. No free-form text passes between agents.
+
+---
+
+## Inter-Agent Contracts
+
+The contracts between agents are more important than the agents themselves:
+
+```typescript {title:lib/agents/types.ts}
+// Risk Monitor output → Simulation input
+export const RiskAssessmentSchema = z.object({
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  affectedNodes: z.array(z.string()),
+  riskType: z.enum(['supplier_failure', 'logistics_delay', 'demand_spike', 'geopolitical']),
+  confidence: z.number().min(0).max(1),
+  estimatedTimeToImpact: z.number().describe('Hours until disruption'),
+});
+
+// Simulation output → Recommendation input
+export const SimulationResultSchema = z.object({
+  baselineDeliveryDays: z.number(),
+  disruptedDeliveryDays: z.number(),
+  affectedOrders: z.number(),
+  estimatedRevenueLoss: z.number(),
+  criticalPath: z.array(z.string()),
+  alternativeRoutes: z.array(z.object({
+    route: z.array(z.string()),
+    additionalCostPct: z.number(),
+    feasibilityScore: z.number(),
+  })),
+});
+```
+
+If the Risk Monitor returns severity `"low"` and confidence `< 0.4`, the orchestrator filters it out before it ever reaches the simulation agent. The orchestrator is the only component with flow control authority.
+
+---
+
+## The Orchestrator: Escalation Ladder
+
+The orchestrator follows a strict escalation ladder to keep costs predictable:
+
+<Mermaid chart={`
+flowchart TD
+    SIG["Incoming signals\nnews · weather · financial"] --> RM["Risk Monitor Agent\n(cheap model first pass)"]
+    RM --> SEV{"Severity?"}
+
+    SEV -->|"low · confidence < 0.4"| DISC["Discard\nno further action"]
+    SEV -->|"low · confidence ≥ 0.4"| SAVE1["Save incident\nno simulation"]
+    SEV -->|"medium"| SIM["Simulation Agent\n(deterministic BFS)"]
+    SEV -->|"high / critical"| SIM
+
+    SIM --> REC{"Severity?"}
+    REC -->|"medium"| SAVE2["Save incident\n+ simulation"]
+    REC -->|"high / critical"| RECAGENT["Recommendation Agent\n(expensive model)"]
+    RECAGENT --> NOTIFY["Notify stakeholders"]
+    RECAGENT --> SAVE3["Save full incident"]
+
+    style DISC fill:#7f1d1d,color:#fca5a5
+    style SAVE1 fill:#1e3a5f,color:#93c5fd
+    style RECAGENT fill:#14532d,color:#86efac
+`} />
+
+This escalation ladder cuts LLM costs by ~60%. 80% of signals are low-severity noise. Only medium+ risks trigger the simulation, and only high/critical risks trigger the expensive recommendation agent.
+
+---
+
+## The Digital Twin: LLMs for Language, Algorithms for Math
+
+The simulation engine is where the architecture decision that changed everything lives.
+
+<Mermaid chart={`
+flowchart LR
+    RISK["Disrupted nodes:\nSupplier A (Taiwan)"] --> BFS["BFS traversal\nof supply graph"]
+    BFS --> CASCADE["Delay cascade:\nFactory B +3 days\nWarehouse C +5 days\nCustomer D +7 days"]
+    CASCADE --> LLM["LLM reads cascade\nand generates\nhuman-readable\nrecommendations"]
+
+    style BFS fill:#1e3a5f,color:#93c5fd
+    style LLM fill:#14532d,color:#86efac
+`} />
+
+The BFS traversal propagates delays downstream through the supply graph: if Supplier A is disrupted with a 3-day delay, every node that depends on it accumulates that delay plus transit time. The critical path is the longest delay chain to any customer node. This is deterministic — given the same graph and the same disruption, the output is always the same.
+
+The LLM then reads the numeric simulation output and generates the recommendation. Not the numbers — the numbers are fixed. The reasoning about what to do about them, and communicating that clearly to a human decision-maker, is where the LLM adds value.
+
+<Callout variant="warning">
+The recommendation agent's output quality depends entirely on the simulation accuracy. If your BFS has a bug — wrong graph traversal, incorrect delay calculations — the LLM will confidently generate recommendations based on wrong numbers. Always validate the deterministic simulation separately before connecting it to the LLM.
+</Callout>
+
+---
+
+## What Impressed Users Most
+
+Two features consistently got the strongest reaction in demos.
+
+**The "what-if" visualization.** A supply chain graph where disrupted nodes glow red and the delay cascade propagates downstream in real time — people immediately understood the impact without explanation. Showing a 7-day customer delay as a red path through the supply graph landed in 3 seconds what a table of numbers couldn't communicate in 30.
+
+**Recommendations with numbers.** Not just "use an alternative supplier" but: "switching to Supplier Y for 30 days costs an estimated ₹4.2L but reduces delay from 18 days to 6 days — feasibility score 0.84." Numbers make decisions actionable. Vague recommendations get ignored. Specific ones with cost estimates get implemented.
+
+The second feature was only possible because the simulation ran first and produced exact numbers that the LLM could cite. This is the practical proof of "LLMs for language, algorithms for math" — the LLM produces better language when the math is done for it.
+
+---
+
+## Live Dashboard with Supabase Realtime
+
+Every agent run creates an immutable event record in Supabase. The dashboard subscribes to new incidents without polling:
+
+<Mermaid chart={`
+sequenceDiagram
+    participant A as Agent Pipeline
+    participant S as Supabase
+    participant D as Dashboard
+
+    D->>S: Subscribe to supply_incidents<br/>(org_id filter)
+    A->>S: INSERT new incident<br/>(risk + simulation + mitigation)
+    S-->>D: Realtime push (INSERT event)
+    D-->>D: Prepend to incidents list
+    Note over D: No polling, no refresh button
+`} />
+
+The schema stores each agent's structured output as JSONB — giving you a full audit trail, replay capability, and the ability to query historical decisions for model evaluation. When the recommendation agent gives an unusual output, you can replay the exact simulation input that produced it.
+
+---
+
+## Agent Performance
+
+| Agent | Avg Latency | Token Usage | Model |
+|---|---|---|---|
+| Risk Monitor (pre-filter) | 0.3s | ~800 tokens | llama-3.1-8b (cheap) |
+| Risk Monitor (full analysis) | 1.2s | ~2,400 tokens | llama-3.3-70b |
+| Simulation | N/A | 0 | Deterministic BFS |
+| Recommendation | 2.1s | ~3,800 tokens | llama-3.3-70b |
+| **Full pipeline (high/critical)** | **~3.5s** | **~7,000 tokens** | — |
+
+---
+
+## Resources
+
+- [LangGraph.js docs](https://langchain-ai.github.io/langgraphjs/) — State machine orchestration
+- [Supabase Realtime docs](https://supabase.com/docs/guides/realtime) — WebSocket subscriptions
+- [GitHub — rocker1166](https://github.com/rocker1166) — Demo and architecture
+
+---
+
+IntelliSupply showed me that multi-agent systems are careful software engineering applied to LLM primitives. The hardest architectural decision — and the one that took longest to accept — was that the LLM shouldn't do the math. An LLM writing narratives about a supply chain disruption is producing its best work. An LLM computing delay cascades through a 200-node graph is producing its worst. Put each component in the role it's actually good at, and the system becomes both more reliable and more impressive. That's the insight. Everything else is implementation.

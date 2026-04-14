@@ -1,0 +1,191 @@
+---
+title: How We Deleted 90,000 PII Records in Production PostgreSQL Without Downtime
+description: Safely deleting 90K PII records from live Postgres with zero downtime, batched deletes, and a complete audit trail.
+date: '2026-03-05'
+lang: en
+tags:
+  - postgresql
+  - devops
+  - production
+  - database
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+Three months into working with Fluxmap, I got an assignment that looked deceptively simple:
+
+> "We need to clean up 90,000 user records from production. PII compliance. Can you handle it?"
+
+I said yes. Then I opened the database, looked at the tables, and felt that familiar cold feeling of realizing this was not going to be simple.
+
+Six tables. Foreign key dependencies in both directions I hadn't expected. ~800 requests/minute of live traffic. Payment records that couldn't be touched without written compliance approval. And 91,247 records to delete without causing a single minute of downtime.
+
+This is the story of how we did it — including the moment at batch 87 where batch times jumped from 1.2 seconds to 8 seconds and I thought I'd broken production.
+
+---
+
+## The Process
+
+<Mermaid chart={`
+flowchart TD
+    A["① Map the schema\nFK dependencies, delete order"] --> B["② Identify candidates\nBuild snapshot table (91,247 IDs)"]
+    B --> C["③ Backup\nRDS snapshot + S3 export (encrypted)"]
+    C --> D["④ Staged deletion\nBatches of 500 · 200ms sleep · kill file"]
+    D --> E["⑤ Monitor\nLock waits · error rates · batch times"]
+    E --> F["⑥ VACUUM ANALYZE\nReclaim space · update planner stats"]
+    F --> G["✓ Done\n91,247 deleted · 0 downtime"]
+
+    style G fill:#14532d,color:#86efac
+    style C fill:#1e3a5f,color:#93c5fd
+`} />
+
+---
+
+## Step 1: Map the Schema
+
+Day one: nothing but schema mapping. You cannot safely delete records without understanding every foreign key relationship.
+
+<Mermaid chart={`
+graph TD
+    USERS["users\n(parent)"] --> PROFILES["user_profiles\n(FK: user_id)"]
+    USERS --> SESSIONS["user_sessions\n(FK: user_id)"]
+    USERS --> PAYMENTS["payment_methods\n(FK: user_id)"]
+    USERS --> AUDIT["audit_logs\n(FK: user_id)"]
+    USERS --> SUBS["subscriptions\n(FK: user_id)"]
+
+    style USERS fill:#7f1d1d,color:#fca5a5
+`} />
+
+**Delete order** (child rows before parent): `audit_logs` → `user_sessions` → `payment_methods` → `user_profiles` → `subscriptions` → `users`.
+
+I ran a FK dependency query, printed the results, reviewed them on paper, and kept it next to me the entire operation. Physical paper. Not because I distrust the query, but because when you're running a deletion script at 2 AM and something looks wrong, you don't want to context-switch to another terminal.
+
+<Callout variant="warning">
+Before any production database operation at this scale: get written approval from tech lead and legal/compliance. Document the scope, approach, and rollback plan. This protects you and documents that the operation was sanctioned.
+</Callout>
+
+---
+
+## Step 2: Identify the Records
+
+The compliance team gave me criteria, not a list of IDs. I built the identification query:
+
+```sql
+-- Create a stable snapshot of deletion candidates
+CREATE TABLE pii_deletion_candidates AS
+SELECT u.id AS user_id
+FROM users u
+LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+LEFT JOIN payment_methods pm ON pm.user_id = u.id
+WHERE s.id IS NULL
+  AND pm.id IS NULL
+  AND u.created_at < NOW() - INTERVAL '90 days'
+  AND u.status IN ('deactivated', 'trial_expired', 'gdpr_requested')
+  AND u.last_active_at < NOW() - INTERVAL '30 days';
+
+SELECT COUNT(*) FROM pii_deletion_candidates;
+-- Result: 91,247
+```
+
+Storing candidates in a **separate table** — not a CTE or temp variable — is critical. It's a stable, auditable snapshot. If the identification query runs again after deletions start, it returns different results. The snapshot table is the ground truth for the entire operation.
+
+I personally reviewed 20 random rows, then asked the compliance team to verify 50 more. Only then did we proceed.
+
+---
+
+## Step 3: Backup — What "Backup" Actually Means Here
+
+Non-negotiable. But "backup" means something specific for a compliance operation.
+
+**RDS snapshot** — point-in-time restore capability. If batch 50,000 reveals a logic error and we need to restore the database to its pre-deletion state, this is how. The restoration procedure: stop application traffic, restore the snapshot to a new RDS instance, update the connection string, restart traffic. Estimated time: 25–40 minutes depending on snapshot size. That's the actual recovery window — write it down before you start.
+
+**S3 export** — encrypted, to a compliance-grade bucket with 7-year retention. This serves two purposes: (1) proof we *had* the data before deleting it, which some compliance frameworks require, and (2) a selective restoration path if you need to recover specific records without rolling back the entire database.
+
+The S3 export is what distinguishes a compliant deletion from a system administration task. It proves the data existed, proves it was deleted, and provides recovery capability for the compliance team if a data subject's request turns out to need correction.
+
+---
+
+## Step 4: Batched Deletion
+
+The critical insight: **never delete 90K rows in a single transaction**.
+
+A single massive DELETE: locks the table for minutes, generates enormous WAL pressure, potentially crashes replication on read replicas, and gives you zero ability to pause mid-way. A single batch of 500 rows: locks for milliseconds, gives you a 200ms breathing window between batches, and can be paused at any time with a kill file.
+
+<Mermaid chart={`
+flowchart TD
+    START["Start: offset = 0"] --> FETCH["Fetch next 500 IDs\nfrom candidates table"]
+    FETCH --> EMPTY{"0 rows\nreturned?"}
+    EMPTY -->|Yes| DONE["✓ All batches complete"]
+    EMPTY -->|No| DEL["DELETE in dependency order:\naudit_logs → sessions →\npayments → profiles →\nsubscriptions → users"]
+    DEL --> AUDIT["INSERT into deletion_audit\n(batch #, count, timestamp, operator)"]
+    AUDIT --> KILL{"Kill file\nexists?"}
+    KILL -->|"Yes (/tmp/pii-cleanup-stop)"| STOP["⚠ Graceful stop"]
+    KILL -->|No| SLEEP["Sleep 200ms"]
+    SLEEP --> FETCH
+
+    style DONE fill:#14532d,color:#86efac
+    style STOP fill:#7c3aed,color:#e9d5ff
+`} />
+
+**Batch size**: 500 rows. **Sleep between batches**: 200ms. The kill file (`touch /tmp/pii-cleanup-stop`) is the emergency pause. If anything looks wrong in Grafana or CloudWatch, halt the script gracefully after the current batch commits — no partial transactions, no data loss.
+
+---
+
+## Step 5: The Moment It Almost Went Wrong
+
+At batch 87 — ~43,000 records in — batch times jumped from 1.2 seconds to 8 seconds.
+
+I didn't panic, but I felt it. That 6.8-second jump on a live production database means something is contending. I opened RDS Performance Insights immediately and looked for lock waits.
+
+There it was: the cleanup script was deleting from `audit_logs` at the same moment the application's audit middleware was *writing* to `audit_logs` for an active user request. Not the same rows — but adjacent rows in a page, causing page-level locking contention. The rows the application was writing happened to be physically close to the rows I was deleting.
+
+This is the kind of thing you can't anticipate from schema analysis alone. The database was telling me something. I needed to listen.
+
+**Fix**: increased sleep between batches from 200ms to 500ms. The contention disappeared within two batches. The rest of the run was clean.
+
+If I had ignored the timing jump, the contention would have continued and potentially affected application error rates. The monitoring wasn't just a nice-to-have — it was how I caught and responded to a real production interaction.
+
+---
+
+## Final Numbers
+
+| Metric | Value |
+|---|---|
+| Total records deleted | 91,247 |
+| Tables affected | 6 |
+| Total time (wall clock) | ~3.2 hours |
+| Batches executed | 183 |
+| Application downtime | **0 minutes** |
+| 5xx error rate during cleanup | No change from baseline |
+| Database CPU spike | Peak 18% (normal: 12%) |
+| Lock wait incidents | 1 — resolved by slowing down |
+
+---
+
+## Step 6: VACUUM ANALYZE
+
+After a large delete, PostgreSQL marks rows as dead tuples but doesn't immediately reclaim the space. `VACUUM ANALYZE` on all 6 affected tables reclaims space and updates query planner statistics. In RDS, autovacuum eventually handles this — but for an operation at this scale, running it manually confirms the operation completed cleanly and immediately restores the query planner's accuracy on the affected tables.
+
+---
+
+## The Checklist
+
+| Step | Done Before |
+|---|---|
+| Written approval (legal + tech lead) | Before anything |
+| Schema mapping — all FK relationships documented | Before writing queries |
+| Identification query built and verified on staging | Before backup |
+| RDS snapshot + encrypted S3 export | Before any deletes |
+| `deletion_audit` table created | Before script runs |
+| Kill file mechanism in place | Before script runs |
+| Monitoring dashboards open (RDS, Datadog/Grafana) | Before script runs |
+| VACUUM ANALYZE on all affected tables | After completion |
+| Audit trail verified complete | After completion |
+
+---
+
+Three things kept this safe: **preparation** (no schema surprises), **batching** (never a table lock longer than milliseconds), and **monitoring** (respond to what the database is telling you, don't just wait for the script to finish).
+
+The most important decision wasn't the batch size or the sleep interval. It was deciding that 200ms sleep was cheap insurance against production incidents — and being willing to increase it to 500ms when the database said to slow down. Production database work rewards the people who are willing to go slower. The 90K records are gone. Zero downtime. Full audit trail.

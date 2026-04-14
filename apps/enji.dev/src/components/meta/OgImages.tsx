@@ -148,7 +148,7 @@ export function PostOgImage({
         <img
           width="48"
           height="48"
-          src="https://github.com/sumanj.png?size=48"
+          src="https://github.com/rocker1166.png?size=48"
           style={styles.authorAvatar}
         />
         <div style={styles.authorName}>@sumanj</div>
@@ -214,7 +214,7 @@ export function PageOgImage({
         <img
           width="48"
           height="48"
-          src="https://github.com/sumanj.png?size=48"
+          src="https://github.com/rocker1166.png?size=48"
           style={styles.authorAvatar}
         />
         <div style={styles.authorName}>@sumanj</div>

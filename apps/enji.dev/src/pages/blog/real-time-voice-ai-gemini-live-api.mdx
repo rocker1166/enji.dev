@@ -1,0 +1,238 @@
+---
+title: Real-Time Voice AI with Gemini Live API — WebSockets, Audio, and Tool Calling
+description: WebSockets, PCM audio, VAD, and tool calling — building real-time voice AI with the Gemini Live API from scratch.
+date: '2026-04-08'
+lang: en
+tags:
+  - ai-agents
+  - typescript
+  - nextjs
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+The first time I tested interruption on the Gemini Live API — spoke mid-sentence while the model was responding — it stopped immediately and listened.
+
+I made my teammate try it before I said anything. She spoke over the model. It stopped. She said: "Oh. That's different." That's the reaction you're trying to produce in your users. Not "this is impressive for AI" — just "oh, it works like talking to a person."
+
+Every other voice AI implementation I'd built felt like a chatbot with a voice skin. Record → Whisper → LLM → TTS → play. Each step adds latency. By the time the user hears a response, 3–5 seconds have passed. The Gemini Live API is architecturally different: audio goes in, audio comes out, over a persistent WebSocket, with the model handling transcription, reasoning, and speech synthesis internally. The result: **320–800ms end-to-end** — fast enough that interruption works, which changes the entire conversational dynamic.
+
+Here's everything I learned building production voice interfaces with this API.
+
+---
+
+## The One Thing That Breaks Everything If You Miss It
+
+<Callout variant="warning">
+Send the setup message **immediately** after the WebSocket `open` event — before you send any audio. If audio arrives before setup, the connection state is undefined and you get silence or errors with no useful diagnostic. This is the most common first-day mistake.
+</Callout>
+
+---
+
+## Connection Model
+
+This is not a request/response API. One WebSocket, open for the entire conversation, up to 10 minutes per session.
+
+<Mermaid chart={`
+sequenceDiagram
+    participant B as Browser
+    participant S as Your Server
+    participant G as Gemini Live API
+
+    B->>S: POST /start-session
+    S->>G: WebSocket connect
+    S->>G: Setup message (model, voice, tools, system prompt)
+    G-->>S: Ready
+
+    loop Each conversation turn
+        B->>S: PCM audio stream (16kHz mono, 16-bit)
+        S->>G: Audio chunks (base64)
+        G-->>S: VAD detects end of speech
+        G-->>S: Audio response (24kHz) + transcript
+        S-->>B: Stream audio + transcript
+
+        opt Model decides to call a tool
+            G-->>S: function_call message
+            S->>S: Execute tool locally
+            S->>G: function_response message
+            G-->>S: Continues audio response
+        end
+    end
+`} />
+
+**Audio specs — the numbers that matter:**
+
+| Direction | Format | Sample Rate | Bit Depth | Channels |
+|---|---|---|---|---|
+| Input (you → Gemini) | PCM | 16kHz | 16-bit | Mono |
+| Output (Gemini → you) | PCM | 24kHz | 16-bit | Mono |
+| Chunk size | — | ~100ms | — | 1600 samples at 16kHz |
+
+Wrong format = silent failure. The API accepts the connection and drops the audio without an error. Match these exactly.
+
+---
+
+## The Setup Message
+
+Everything about the session — model, voice, tools, system prompt, VAD configuration — is set in the first message you send. There's no way to change it mid-session.
+
+```typescript {title:server/voice-session.ts}
+private sendSetup() {
+  this.ws.send(JSON.stringify({
+    setup: {
+      model: 'models/gemini-2.0-flash-live-001',
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+        },
+      },
+      systemInstruction: { parts: [{ text: this.config.systemInstruction }] },
+      tools: this.config.tools ?? [],
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          disabled: false,
+          startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
+          endOfSpeechSensitivity: 'END_SENSITIVITY_MEDIUM',
+          silenceDurationMs: 800,
+        },
+      },
+    },
+  }));
+}
+```
+
+Available voices: **Puck, Charon, Kore, Fenrir, Aoede** (English). Aoede is the most neutral for assistant use cases. Fenrir sounds more authoritative. Test them with your specific system prompt — the voice changes how the content lands.
+
+---
+
+## Voice Activity Detection (VAD)
+
+VAD is what makes the conversation feel natural — the model knows when you're done speaking without you pressing a button.
+
+<Mermaid chart={`
+flowchart LR
+    MIC["Microphone\naudio stream"] --> VAD{"VAD\ndetects speech?"}
+    VAD -->|"RMS above threshold\n(speech)"| SEND["Send audio chunk\nto Gemini"]
+    VAD -->|"800ms silence\n(turn end)"| END["Signal end of turn\nGemini responds"]
+    VAD -->|"Below threshold\n(noise)"| DROP["Drop chunk\nnot sent"]
+
+    style SEND fill:#14532d,color:#86efac
+    style DROP fill:#7f1d1d,color:#fca5a5
+`} />
+
+**VAD sensitivity tradeoffs:**
+
+| Parameter | Low | High |
+|---|---|---|
+| `startOfSpeechSensitivity` | Misses soft speech | May trigger on noise |
+| `endOfSpeechSensitivity` | Cuts off mid-thought | Waits too long |
+| `silenceDurationMs` | 500ms — rapid Q&A | 1200ms — users who pause |
+
+For noisy environments, add client-side RMS gating: only send audio chunks when amplitude is above a noise floor threshold. This prevents background noise from burning tokens on the Gemini side.
+
+<Callout variant="warning">
+Echo cancellation is essential when audio plays through speakers. Without it, the model hears its own voice, tries to respond to itself, and you get a feedback loop. Set `echoCancellation: true` in `getUserMedia`. For speaker setups without headphones, you may need acoustic echo cancellation at the server level.
+</Callout>
+
+---
+
+## Interruption Handling
+
+This is the feature that changes the entire feel of the product, and it deserves more than a paragraph.
+
+When VAD detects user speech while audio is still playing, Gemini sends an `interrupted` signal. The model has already discarded its remaining response and switched to listening mode. Your client must match that immediately: stop queued audio, clear the buffer, signal ready.
+
+The implementation is straightforward. The experience is not. What you're shipping is the feeling of being able to say "wait, actually—" to an AI and have it stop talking. Nobody who has used conventional voice AI has experienced this. The first time users encounter it, they usually test it on purpose — speak over the model, watch it stop, speak over it again. It feels like a feature worth discovering.
+
+Get this right and users will show the product to other people. Get it wrong (queued audio plays out, model ignores the interruption) and the whole interaction feels broken.
+
+---
+
+## Tool Calling in Voice
+
+Tool calling pauses audio output while waiting for your function result. For slow tools, this creates audible dead silence.
+
+<Mermaid chart={`
+sequenceDiagram
+    participant G as Gemini
+    participant S as Server
+    participant API as External API
+
+    G-->>S: function_call: get_weather(city="Kolkata")
+
+    alt Fast tool (< 200ms)
+        S->>S: Execute synchronously
+        S->>G: function_response: "32°C, humid"
+        G-->>S: Continues speaking with result
+    end
+
+    alt Slow tool (> 500ms)
+        S->>G: function_response: {status: "pending", message: "Looking that up..."}
+        Note over G: Model speaks interim message
+        S->>API: Fetch weather data
+        API-->>S: Response
+        S->>G: function_response: {output: "32°C, humid"}
+        G-->>S: Continues with real data
+    end
+`} />
+
+For slow tools: respond immediately with `{ status: "pending", message: "Looking that up..." }`. The model speaks this interim message while your tool runs. When the real result arrives, send a second `function_response`. The model picks up with the actual data. Without this pattern, slow tools produce 2–5 seconds of silence — in a voice conversation, that feels like the model crashed.
+
+---
+
+## Latency Breakdown
+
+| Component | Typical |
+|---|---|
+| Network: browser → your server | 10–30ms |
+| Audio buffering (100ms chunks) | 0–100ms |
+| Network: server → Gemini | 20–80ms |
+| Gemini: time to first audio token | 200–400ms |
+| Network: Gemini → server → browser | 20–80ms |
+| Browser: audio decode + playback | 10–20ms |
+| **Total TTFA** | **~320–800ms** |
+
+TTFA = Time To First Audio. Gemini starts streaming audio before generation is complete — you hear the first words while the rest is still being generated.
+
+**Optimization levers:**
+- Deploy your server in `us-central1` (closest to Gemini endpoints) — saves 20–50ms
+- Forward audio chunks to the client immediately as they arrive — don't buffer
+- Pre-warm connections on server start — first connection after cold start is slower
+
+---
+
+## Session Renewal
+
+Sessions have a hard 10-minute limit.
+
+<Mermaid chart={`
+flowchart TD
+    S["Session starts"] --> T["9-minute timer"]
+    T -->|"Timer fires"| NEW["Create new session\n(same config)"]
+    NEW -->|"5s overlap"| CLOSE["Close old session\nafter in-progress audio"]
+    CLOSE --> CONT["Conversation continues\nseamlessly"]
+
+    S --> CRASH{"Unexpected\nclose?"}
+    CRASH -->|"Yes"| RESTART["Auto-restart\n(same config + history)"]
+    CRASH -->|"No (user ended)"| END["Clean shutdown"]
+`} />
+
+Schedule renewal at 9 minutes (not 10) to allow overlap. Give the old session 5 seconds to finish any in-progress audio before closing. Handle unexpected closes with auto-restart — WebSocket connections drop. Your session management code will be tested on this more than you expect.
+
+---
+
+## Resources
+
+- [Gemini Live API reference](https://ai.google.dev/api/generate-content#v1beta.GenerativeService.BidiGenerateContent)
+- [Gemini Live API quickstart](https://ai.google.dev/gemini-api/docs/live)
+- [Available voices](https://ai.google.dev/gemini-api/docs/live#voices)
+- [Web Audio API spec](https://www.w3.org/TR/webaudio/)
+- [AudioWorklet API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet)
+- [Multimodal Live API Web Console](https://github.com/google-gemini/multimodal-live-api-web-console) — Google's reference implementation
+
+---
+
+Building on the Gemini Live API is 80% WebSocket plumbing, 15% audio format debugging, and 5% AI configuration. That ratio surprises people expecting the AI to be the hard part. It's not. The hard parts are: managing WebSocket reconnects gracefully, handling the edge cases in VAD (background noise, self-interruption during fast tool calls, the feedback loop if you miss echo cancellation). Get the infrastructure right and the AI does something genuinely impressive. Skip the infrastructure details and you get a demo that works once under ideal conditions.
