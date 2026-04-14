@@ -1,0 +1,110 @@
+---
+title: ClassPilot - AI-Powered RAG Tutor
+description: AI-powered RAG tutor with Socratic questioning, interactive canvas, and voice — built at FrostHacks.
+caption: AI + Education
+layout: Project
+date: '2026-02-15'
+tags:
+  - next.js
+  - langgraph
+  - convex
+  - gemini
+  - livekit
+category: ai
+type: app
+liveUrl: https://frosthacks-localhost.vercel.app/
+---
+
+import Callout from '@/components/mdx/Callout';
+
+Most AI tutors just give you the answer. That defeats the entire point of learning. When I built ClassPilot at FrostHacks, the core design constraint was simple: the AI must never hand over a direct answer. It asks questions, nudges you toward the right reasoning, and only reveals information when you've demonstrated understanding. Socratic method, enforced by architecture.
+
+The result is a course-aware RAG tutor with an interactive canvas, real-time voice conversations, and strict knowledge boundaries — all built in a hackathon sprint.
+
+---
+
+## The Problem with AI Tutors
+
+Every ChatGPT wrapper calls itself a tutor. You paste a question, it gives you the answer, you copy it into your assignment. Zero learning happened.
+
+Real tutoring works differently. A good tutor asks "what do you think happens when X?" before explaining X. They know what material the student has covered. They don't go off-syllabus. They adapt to the student's pace.
+
+I wanted to build exactly that — an AI that teaches through guided questioning, stays within course boundaries, and gives students multiple ways to interact (chat, voice, visual canvas).
+
+---
+
+## Architecture
+
+The system follows a clear pipeline:
+
+**Student** → **Next.js App Router** → **Convex (Realtime DB + Vector Search)** → **LangGraph Agent** → **Gemini 1.5 Pro + Tools** → **Chat / Canvas / Voice Output**
+
+At the core, LangGraph.js orchestrates a stateful agent that manages conversation flow. The agent has access to several tools:
+
+- **Vector Search Tool**: Queries Convex's vector store for relevant course material chunks
+- **Quiz Generator Tool**: Creates interactive quizzes rendered on the canvas
+- **Code Block Tool**: Renders executable code examples
+- **PDF Viewer Tool**: Surfaces specific pages from course PDFs
+
+The agent decides which tool to invoke based on conversation context. If a student asks about a concept, it searches course materials first. If the student seems to understand, it might generate a quiz to test retention.
+
+---
+
+## How RAG Works in ClassPilot
+
+Course materials (PDFs, notes, lecture transcripts) are ingested into Convex, chunked, and embedded. When a student asks a question, the LangGraph agent runs a vector similarity search against only that course's material.
+
+<Callout variant="info">
+The hardest problem I solved was implementing a strict RAG boundary. The AI must only answer from course materials, never from its general knowledge. I achieved this by instructing the agent to explicitly cite source chunks and refuse queries that fall outside the retrieved context. If the vector search returns nothing relevant, the agent says "this isn't covered in your course materials" instead of improvising.
+</Callout>
+
+This boundary is critical for educational integrity. A student studying organic chemistry shouldn't get answers from the model's general training data — they should get answers grounded in their professor's specific lecture notes.
+
+The CopilotKit AG-UI protocol handles the frontend integration, letting the agent push structured actions (render quiz, show PDF, display code) to the canvas alongside chat responses.
+
+---
+
+## Voice Integration with LiveKit
+
+Text chat works for some learners. Others think better when talking. I integrated LiveKit for real-time voice-to-voice conversations with the tutor.
+
+The flow: student speaks → LiveKit captures audio → speech-to-text → LangGraph agent processes → Gemini generates response → text-to-speech → LiveKit streams audio back.
+
+The Socratic approach works even better in voice. The AI asks a question, waits for the student to reason through it verbally, then responds. It feels like talking to a teaching assistant, not typing into a chatbox.
+
+Latency was the challenge here. The full pipeline (STT → agent → LLM → TTS) adds up. I optimized by streaming the LLM response to TTS in chunks rather than waiting for the complete response, keeping the conversational flow natural.
+
+---
+
+## Interactive Canvas
+
+The canvas is where ClassPilot goes beyond a chatbot. It's a shared workspace between the student and AI:
+
+- **Quizzes**: Multiple choice, fill-in-the-blank, generated from course materials. The agent adapts difficulty based on previous answers.
+- **PDF Viewer**: When the AI references a specific section, it surfaces the relevant PDF page on the canvas.
+- **Code Blocks**: For CS courses, executable code examples appear alongside explanations.
+- **Source Citations**: Every claim links back to the specific course material chunk it came from.
+
+The canvas state is managed through Convex's real-time subscriptions, so updates appear instantly without polling.
+
+---
+
+## Tech Stack Decisions
+
+**Convex** over a traditional database was deliberate. I needed real-time subscriptions (for canvas updates), vector search (for RAG), and server functions (for agent tools) in one platform. Convex handles all three without stitching together Pinecone + Postgres + Pusher.
+
+**LangGraph.js** over a simple prompt chain because the tutoring flow is inherently stateful. The agent needs to remember what it asked, what the student answered, and what tools it already used. LangGraph's state machine approach maps perfectly to this.
+
+**Gemini 1.5 Pro** for its large context window. Course materials can be extensive, and I needed room for retrieved chunks plus conversation history without aggressive truncation.
+
+---
+
+## What I Learned
+
+Building ClassPilot taught me that the hardest part of AI applications isn't the AI — it's the constraints. Making the model not do something (answer from general knowledge) is harder than making it do something (answer questions).
+
+RAG boundary enforcement is still an unsolved problem in the general case. My approach works for structured course materials but would need significant rethinking for open-domain tutoring.
+
+The hackathon format forced ruthless prioritization. I scoped the canvas to three widget types, limited voice to English, and skipped multi-course support entirely. Every feature that shipped actually worked, which matters more than a long feature list with broken demos.
+
+If I rebuilt this tomorrow, I'd add conversation memory summarization (long tutoring sessions hit context limits) and implement adaptive difficulty curves based on quiz performance over time.

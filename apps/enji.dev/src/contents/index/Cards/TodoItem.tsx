@@ -15,11 +15,11 @@ interface TodoItemProps {
 
 function TodoItem({
   state,
-  title = 'Create Documentations',
-  description = 'It is good to create early documentation for our new library.',
+  title = 'Deploy to Production',
+  description = 'Run migrations, push to Cloud Run, verify health checks pass.',
   date = '10:00 AM · Tomorrow',
-  tag1 = 'Docs',
-  tag2 = 'Support',
+  tag1 = 'Backend',
+  tag2 = 'DevOps',
 }: TodoItemProps) {
   return (
     <div

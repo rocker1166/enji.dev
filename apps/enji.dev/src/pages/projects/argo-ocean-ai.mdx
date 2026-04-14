@@ -1,0 +1,84 @@
+---
+title: Argo Ocean AI - Conversational Oceanographic Data Explorer
+description: Multi-agent conversational system for exploring 20+ years of global Argo oceanographic data.
+caption: Multi-Agent System
+layout: Project
+date: '2025-09-15'
+tags:
+  - next.js
+  - vercel-ai-sdk
+  - supabase
+  - multi-agent
+  - typescript
+category: ai
+type: app
+---
+
+import Callout from '@/components/mdx/Callout';
+
+I'll be upfront: this project isn't finished. It's the one I'm most proud of architecturally, but life and other commitments got in the way of completing it. I'm writing about it because the multi-agent design taught me more about AI system architecture than anything else I've built.
+
+Argo Ocean AI is a conversational interface for exploring global oceanographic data from the Argo float network — over 20 years of temperature, salinity, pressure, and biogeochemical measurements from thousands of autonomous floats across the world's oceans. Instead of writing SQL queries or navigating complex data portals, you ask questions in natural language.
+
+---
+
+## Why This Matters
+
+The Argo program has deployed nearly 4,000 autonomous floats across the global ocean. These floats dive to 2,000 meters, measure ocean properties on the way up, surface, transmit data via satellite, and dive again. The dataset is massive and invaluable for understanding climate change, ocean circulation, and marine ecosystems.
+
+The problem: accessing this data requires expertise in oceanographic data formats, spatial queries, and statistical analysis. Researchers spend hours writing queries before they can start analyzing. I wanted to build an interface where you could just ask "What's the temperature trend in the North Atlantic at 500m depth over the last decade?" and get an answer with visualizations.
+
+---
+
+## Multi-Agent Architecture
+
+The system uses a manager-worker pattern with specialized agents:
+
+**Manager Agent**: Routes incoming queries to the appropriate specialist agent(s). A question about temperature trends goes to the Trend Analysis Agent. A question about unusual readings goes to the Anomaly Detection Agent. Complex queries might involve multiple agents sequentially.
+
+The specialist agents:
+
+- **Data Discovery Agent**: Finds relevant Argo floats and measurements based on spatial/temporal criteria
+- **Trend Analysis Agent**: Computes statistical trends over time for specified parameters and regions
+- **Anomaly Detection Agent**: Identifies unusual measurements that deviate from historical baselines
+- **BGC Analysis Agent**: Handles biogeochemical data (oxygen, chlorophyll, pH, nitrate) from BGC-Argo floats
+- **Forecasting Agent**: Uses ML prediction tools to project future ocean conditions based on historical patterns
+- **Visualization Agent**: Generates charts, maps, and depth profiles from query results
+
+<Callout variant="warning">
+This is a work in progress. The Manager Agent, Data Discovery Agent, and Trend Analysis Agent are fully functional. The Anomaly Detection and Visualization agents are partially implemented. The BGC and Forecasting agents are scaffolded but not yet connected to real data pipelines.
+</Callout>
+
+---
+
+## Technical Implementation
+
+**Next.js** serves the conversational interface with streaming responses. When you ask a question, you see the agent's reasoning process in real-time — which agent it selected, what queries it's running, and the results as they come in.
+
+**Vercel AI SDK** handles the LLM integration with tool calling. Each specialist agent is defined with its own set of tools (database queries, statistical functions, visualization generators). The manager agent's tools include the ability to delegate to specialists.
+
+**Supabase** stores the Argo measurement data and float metadata. The schema is designed for efficient spatial and temporal queries — PostGIS for geographic filtering, time-range partitioning for historical lookups. Over 20 years of data means millions of rows, so query optimization matters.
+
+The multi-agent pattern works well here because oceanographic queries are naturally decomposable. "Compare temperature at 500m between the North Atlantic and South Pacific over the last 5 years" decomposes into: two data discovery tasks, two trend analyses, and one visualization. The manager coordinates this pipeline automatically.
+
+---
+
+## What's Working and What's Not
+
+**Working well**: Natural language to spatial/temporal queries. You can ask about specific ocean regions, depth ranges, and time periods, and the system translates that into efficient database queries. The streaming UI gives good feedback about what the system is doing.
+
+**Partially working**: Trend analysis and basic visualization. The statistical computations are correct, but the visualization output needs refinement — chart formatting, interactive maps, and depth profile displays are functional but rough.
+
+**Not yet built**: Full anomaly detection (the ML model for baseline computation needs training data), BGC analysis (requires additional data ingestion pipelines), and forecasting (needs time-series models trained on the Argo dataset).
+
+---
+
+## What I Learned
+
+The multi-agent architecture forced me to think carefully about agent boundaries. The temptation is to make one super-agent that can do everything. That fails because the tool count explodes, the system prompt becomes unmanageable, and the LLM makes worse tool selection decisions.
+
+Splitting into specialists with a manager creates clean interfaces. Each agent has 3-5 tools max, a focused system prompt, and a narrow responsibility. The manager's job is routing, not analysis. This separation of concerns mirrors good software architecture — and it turns out the same principles apply to AI systems.
+
+The biggest unfinished challenge: making the system conversational across multiple turns. The first query works great. Follow-up queries like "now show me the same thing but for the Indian Ocean" require the system to understand context from the previous turn, including which agent handled it and what parameters were used. I have the architecture for this but haven't polished the implementation.
+
+I plan to finish this project. The foundation is solid, and the remaining work is mostly data pipeline engineering and ML model training — not architectural rework.

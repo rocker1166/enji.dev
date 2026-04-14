@@ -76,25 +76,32 @@ function HeaderTitle() {
         </m.span>
         <m.h1
           className={clsx(
-            'block text-base text-slate-600',
-            'md:text-xl',
+            'block text-xs text-slate-600',
+            'md:text-sm',
             'dark:text-slate-400'
           )}
           initial={animation.hide}
           animate={animation.show}
           transition={{ delay: 0.3 }}
         >
-          <span className={clsx('lowercase')}>A</span>{' '}
           <strong
-            className={clsx(
-              'font-bold lowercase text-slate-700',
-              'dark:text-slate-300'
-            )}
+            className={clsx('font-bold text-slate-700', 'dark:text-slate-300')}
           >
-            3rd-year CSE (AI/ML) student
+            Full-Stack Developer
           </strong>{' '}
-          from India (West Bengal).{' '}
-          <span className={clsx('block')}>Goal: Full financial independence in 2.5 years.</span>
+          &amp; AI Systems Builder.{' '}
+          <span className={clsx('block')}>
+            Co-founder{' '}
+            <strong
+              className={clsx(
+                'font-bold text-slate-700',
+                'dark:text-slate-300'
+              )}
+            >
+              @LastMinuteEngineering
+            </strong>{' '}
+            · Building at UpDesk · 100agentdev Winner.
+          </span>
         </m.h1>
       </span>
     </div>

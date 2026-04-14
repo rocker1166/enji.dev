@@ -40,7 +40,11 @@ export type TPostOgImage = Partial<
 export type TProjectFrontMatter = TBaseFrontMatter & {
   githubUrl?: string;
   npmUrl?: string;
-  type: 'package';
+  liveUrl?: string;
+  date: string;
+  tags: Array<string>;
+  category: string;
+  type: 'package' | 'app';
 };
 
 export type TReaction = Record<ReactionType, number>;

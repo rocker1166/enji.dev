@@ -20,26 +20,26 @@ const content: Array<Content> = [
   {
     state: 'typography',
     shows: ['typography'],
-    title: 'Typography',
-    description: 'Selecting the font type, font size, and font weight.',
+    title: 'Next.js / React',
+    description: 'Server components, streaming SSR, and optimistic UI updates.',
   },
   {
     state: 'spacing',
     shows: ['typography', 'spacing'],
-    title: 'Spacing',
-    description: 'Positioning and adding spacing between elements.',
+    title: 'Node.js / APIs',
+    description: 'REST APIs, auth middleware, background jobs, and webhooks.',
   },
   {
     state: 'colors',
     shows: ['typography', 'spacing', 'colors'],
-    title: 'Colors',
-    description: 'Choosing a color scheme with sufficient contrast.',
+    title: 'PostgreSQL / Redis',
+    description: 'Schema design, indexing, caching, and zero-downtime migrations.',
   },
   {
     state: 'effects',
     shows: ['typography', 'spacing', 'colors', 'effects'],
-    title: 'Effects',
-    description: 'Add effects like borders, shadows, rounded corners, etc.',
+    title: 'CI/CD / GCP',
+    description: 'GitHub Actions pipelines and Cloud Run deployments.',
   },
 ];
 
@@ -50,10 +50,9 @@ function CleanIntuitive() {
     <>
       <header className={clsx('mb-8')}>
         <SectionTitle
-          title="Eye Catching, Modern & Minimalist Design."
-          caption="Clean & Intuitive"
-          description="Keep the User Interface clean with a modern touch without
-            compromising the User Experience."
+          title="From Pixel-Perfect UI to Production Backend."
+          caption="Full-Stack Development"
+          description="Building end-to-end with Next.js, TypeScript, Node.js, and Postgres — clean interfaces backed by solid, scalable systems."
         />
       </header>
       <SectionContent>
@@ -94,11 +93,11 @@ function CleanIntuitive() {
                       ? currentState.shows
                       : ['typography', 'spacing', 'colors', 'effects']
                   }
-                  title="UI Implementation"
-                  description="Start creating UI components using React and Tailwind CSS."
+                  title="Ship Auth Feature"
+                  description="JWT middleware, refresh tokens, and role-based access control."
                   date="10:00 AM · Tomorrow"
-                  tag1="Design"
-                  tag2="Components"
+                  tag1="Backend"
+                  tag2="Next.js"
                 />
               </div>
             </div>

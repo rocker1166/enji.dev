@@ -1,27 +1,10 @@
 import clsx from 'clsx';
 import Link from 'next/link';
 
-import {
-  ExternalLink,
-  FigmaIcon,
-  GitHubIcon,
-  TwitterIcon,
-} from '@/components/Icons';
+import { ExternalLink, GitHubIcon, LinkedInIcon } from '@/components/Icons';
 
 import dayjs from '@/utils/dayjs';
 
-function LastUpdate() {
-  return (
-    <a
-      href="https://github.com/rocker1166/enji.dev"
-      target="_blank"
-      rel="noreferrer nofollow"
-      className={clsx('hover:underline')}
-    >
-      <span>see the recent update on GitHub</span>
-    </a>
-  );
-}
 
 interface FooterLinkProps {
   title: string;
@@ -112,22 +95,9 @@ function FooterDescription() {
         About Me
       </div>
       <p className={clsx('mb-4 font-normal leading-relaxed')}>
-        I&apos;m Suman, a <strong>3rd-year CSE (AI/ML) student</strong> aiming
-        for financial independence.
+        I&apos;m Suman, a <strong>full-stack developer</strong> and AI systems builder based in Kolkata.
       </p>
       <ul className={clsx('-ml-2 flex gap-1')}>
-        <li>
-          <a
-            href="https://twitter.com/sumanj"
-            target="_blank"
-            rel="noreferrer nofollow"
-            className={clsx('flex h-9 w-9 items-center justify-center')}
-            aria-label="My Twitter profile"
-            title="My Twitter profile"
-          >
-            <TwitterIcon className={clsx('h-5 w-5')} />
-          </a>
-        </li>
         <li>
           <a
             href="https://github.com/rocker1166"
@@ -142,14 +112,14 @@ function FooterDescription() {
         </li>
         <li>
           <a
-            href="https://figma.com/@sumanj"
+            href="https://www.linkedin.com/in/suman-jana-dev/"
             target="_blank"
             rel="noreferrer nofollow"
             className={clsx('flex h-9 w-9 items-center justify-center')}
-            aria-label="My Figma profile"
-            title="My Figma profile"
+            aria-label="My LinkedIn profile"
+            title="My LinkedIn profile"
           >
-            <FigmaIcon className={clsx('h-5 w-5')} />
+            <LinkedInIcon className={clsx('h-5 w-5')} />
           </a>
         </li>
       </ul>
@@ -214,27 +184,6 @@ function Footer() {
                   ]}
                 />
               </div>
-              <div className={clsx('flex', 'sm:gap-16')}>
-                <FooterGroup
-                  title="This Site"
-                  links={[
-                    {
-                      title: 'Design Concept',
-                      href: 'https://www.figma.com/community/file/1176392613303840973',
-                      isInternal: false,
-                    },
-                    {
-                      title: 'Source Code',
-                      href: 'https://github.com/rocker1166/enji.dev',
-                      isInternal: false,
-                    },
-                    {
-                      title: 'Credits',
-                      href: '/credits',
-                    },
-                  ]}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -246,9 +195,6 @@ function Footer() {
         >
           <div className={clsx('font-semibold')}>
             &copy; {dayjs().format('YYYY')}, Suman Jana
-          </div>
-          <div className={clsx('text-slate-500', 'dark:text-slate-400')}>
-            <LastUpdate />
           </div>
         </div>
       </div>

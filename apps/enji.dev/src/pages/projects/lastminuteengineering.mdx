@@ -1,0 +1,78 @@
+---
+title: LastMinuteEngineering - Ed-Tech Platform
+description: Ed-tech platform for last-minute exam prep — study notes, AI-generated content, and practice tools.
+caption: Co-founded
+layout: Project
+date: '2024-05-01'
+tags:
+  - next.js
+  - firebase
+  - gemini
+  - typescript
+  - tailwind
+category: startup
+type: app
+liveUrl: https://lastminuteengineering.tech/
+---
+
+import Callout from '@/components/mdx/Callout';
+
+Every engineering student knows the feeling. It's 11 PM, the exam is tomorrow at 9 AM, and the syllabus has 12 units. The textbook is 400 pages. The notes from class are incomplete. YouTube has 45-minute lectures when you need 5-minute explanations.
+
+I co-founded LastMinuteEngineering to solve exactly this. Concise study notes, AI-generated content, topic-specific short videos, and practice questions — all structured around the syllabus, not around what's convenient for the content creator.
+
+---
+
+## Traction
+
+The numbers speak for themselves:
+
+- **11,000+** active website users
+- **5,000+** YouTube subscribers
+- **3,000+** WhatsApp channel members
+- **1,000,000+** total page views
+
+This isn't a side project that lives on my GitHub. It's a product that real students use before real exams, and the traffic spikes prove it — usage surges 10x during exam weeks.
+
+<Callout variant="info">
+The most validating moment was seeing students share our notes in WhatsApp groups organically, without any marketing push. When your product spreads through word of mouth in exam-season group chats, you've solved a real problem.
+</Callout>
+
+---
+
+## What We Built
+
+**Study Notes**: Concise, syllabus-aligned notes for core engineering subjects. Not textbook rewrites — distilled explanations that cover what you need to know for the exam in the minimum reading time.
+
+**AI-Generated Notes**: Using Gemini, we generate supplementary notes for topics where our manually written content has gaps. The AI output goes through editorial review before publishing — we don't ship raw LLM output to students who are relying on accuracy.
+
+**Topic-Specific YouTube Videos**: Short, focused videos covering individual topics. Not hour-long lectures. A student looking for "Dijkstra's algorithm" gets a 6-minute video on Dijkstra's algorithm, not a 90-minute graph theory playlist.
+
+**Practice Questions**: Exam-style questions with solutions, organized by topic and difficulty. The fastest way to test whether you actually understood the notes.
+
+**Exam Suggestions**: Predicted important topics based on previous years' question patterns. Students use these to prioritize their last-minute study time.
+
+---
+
+## Technical Stack
+
+- **Next.js** with TypeScript for the web platform — SSR for SEO, fast page loads for students on slow connections
+- **Firebase** for authentication, real-time database, and hosting
+- **Gemini LLM** for AI-powered note generation and content augmentation
+- **Tailwind CSS** for rapid UI development
+
+The architecture is deliberately simple. Students on exam night don't care about your microservices — they care that the page loads fast and the content is accurate. Next.js with SSR means notes are indexed by Google (students search "binary tree notes" and find us) and load instantly even on 3G connections.
+
+Firebase handles the backend without requiring me to manage servers. For a content-heavy platform with predictable read patterns, it's the right fit.
+
+---
+
+## What I Learned
+
+Building LastMinuteEngineering taught me that distribution matters as much as product quality. We could have the best notes in the world, but if students can't find them at 11 PM the night before their exam, it doesn't matter.
+
+SEO became a core competency. Structuring content so that "operating systems notes for exam" ranks on Google directly translates to users. YouTube SEO for our video content follows the same principle — titles, descriptions, and thumbnails optimized for how students actually search.
+
+The other big lesson: content platforms have a compounding advantage. Every new set of notes we publish makes the site more valuable, attracts more users, and generates more word-of-mouth. The hard part is the first 1,000 users. After that, the flywheel kicks in.
+
+Co-founding something that real people depend on during high-stress moments (exams) taught me to take reliability seriously. If the site goes down during exam week, that's not a minor inconvenience — it's students losing access to their study material when they need it most.

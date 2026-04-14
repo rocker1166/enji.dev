@@ -21,7 +21,11 @@ const PostFrontMatter = z.object({
 const ProjectFrontMatter = z.object({
   githubUrl: z.string().url().optional(),
   npmUrl: z.string().url().optional(),
-  type: z.enum(['package']).default('package'),
+  liveUrl: z.string().url().optional(),
+  date: z.string().regex(dateRegex, 'Date format MUST be YYYY-MM-DD'),
+  tags: z.array(z.string()).min(1).max(6),
+  category: z.string(),
+  type: z.enum(['package', 'app']).default('app'),
 });
 
 const validate = (schema, data) => {

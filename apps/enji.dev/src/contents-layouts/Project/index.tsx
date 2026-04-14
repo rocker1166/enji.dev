@@ -18,7 +18,7 @@ interface ProjectLayoutProps {
 }
 
 function ProjectLayout({
-  frontMatter: { title, description, caption, githubUrl, npmUrl },
+  frontMatter: { title, description, caption, githubUrl, npmUrl, liveUrl, tags },
   tableOfContents,
   children = null,
 }: PropsWithChildren<ProjectLayoutProps>) {
@@ -34,7 +34,12 @@ function ProjectLayout({
       <SkipNavigation />
       <Head title={title} description={description} ogImage={image.default} />
       <PageHeader title={title} description={description} caption={caption} />
-      <ProjectMeta githubUrl={githubUrl} npmUrl={npmUrl} />
+      <ProjectMeta
+        githubUrl={githubUrl}
+        npmUrl={npmUrl}
+        liveUrl={liveUrl}
+        tags={tags}
+      />
       <WithTableOfContents tableOfContents={tableOfContents}>
         {children}
         <ProjectFooter githubUrl={githubUrl} />

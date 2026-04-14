@@ -95,7 +95,7 @@ export const getPostStructuredData = ({
       {
         '@type': 'Person',
         name: 'Suman Jana',
-        jobTitle: 'CSE (AI/ML) Student',
+        jobTitle: 'Full-Stack Developer',
         url: 'https://www.enji.dev/about',
       },
     ],

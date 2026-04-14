@@ -22,7 +22,8 @@
       "WebFetch(domain:deepeval.com)",
       "WebFetch(domain:docs.ragas.io)",
       "Bash(node -e ':*)",
-      "Bash(node -e \"console.log\\('50 tools kill your token budget. Dynamic selection, schema compression, and routing for production AI agents.'.length\\)\")"
+      "Bash(node -e \"console.log\\('50 tools kill your token budget. Dynamic selection, schema compression, and routing for production AI agents.'.length\\)\")",
+      "Bash(npx next:*)"
     ]
   }
 }

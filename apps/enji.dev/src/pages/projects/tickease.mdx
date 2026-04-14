@@ -1,0 +1,93 @@
+---
+title: Tickease - Mobile-First Event Management Platform
+description: Mobile-first event management with real-time attendee tracking and multi-tier ticketing.
+caption: HackFest · IIT Dhanbad
+layout: Project
+date: '2025-12-01'
+tags:
+  - react-native
+  - supabase
+  - firebase
+  - expo
+  - next.js
+category: hackathon
+type: app
+---
+
+import Callout from '@/components/mdx/Callout';
+
+Thirty-six hours. Five people. One goal: build an event management platform that actually works on mobile, not a desktop dashboard crammed into a phone screen. Tickease won 1st Runner Up at HackFest 2025 (IIT Dhanbad), and the thing that set it apart was a dual-database architecture that gave organizers real-time attendee tracking without sacrificing data reliability.
+
+I served as Full-Stack Developer and System Architect on the team, responsible for the overall technical design, database architecture, and most of the backend implementation.
+
+---
+
+## Why Another Event Platform
+
+Existing event management tools share a common flaw: they treat mobile as an afterthought. Organizers check attendance on laptops, ticket scanning happens through clunky web apps, and real-time data means refreshing a dashboard every 30 seconds.
+
+For college-scale events — fests with 500-2000 attendees across multiple venues — organizers need to know right now how many people are in each venue, which ticket tiers are selling, and whether check-in queues are backing up. That requires a mobile-native approach with real-time data.
+
+---
+
+## Dual-Database Architecture
+
+This was the core architectural decision and the one I'm most proud of. Tickease uses two databases for different purposes:
+
+**Firebase Realtime Database** handles live attendee tracking. When someone scans a ticket at a venue entrance, Firebase updates instantly and pushes the change to every connected organizer's phone. Sub-second latency. No polling.
+
+**Supabase** handles everything persistent: user accounts, event configurations, ticket purchases, revenue data, analytics queries, and authentication. Supabase's PostgreSQL backend gives us relational queries that Firebase can't do efficiently — things like "show me revenue by ticket tier for the last 7 days."
+
+<Callout variant="info">
+The dual-database approach solved a real tension in event management: you need real-time speed for operational data (who's where right now) and relational depth for business data (how much revenue did VIP tickets generate). Trying to force both into one database means compromising on one dimension. Splitting them cleanly was the right call.
+</Callout>
+
+Data flows between the two: when a ticket is scanned, Firebase gets the real-time event and Supabase gets the persistent record. A background sync ensures consistency, with Firebase as the source of truth for live state and Supabase as the source of truth for historical data.
+
+---
+
+## Key Features
+
+**Multi-Tier Ticketing**: Organizers define ticket tiers (General, VIP, Early Bird, etc.) with independent pricing, capacity limits, and access rules. The system enforces capacity in real-time — when a tier sells out, it's immediately unavailable.
+
+**Real-Time Attendee Tracking**: A live dashboard shows attendee counts per venue, check-in rates over time, and queue estimates. Organizers see this on their phones while walking between venues.
+
+**QR Code Scanning**: Each ticket generates a unique QR code. Scanning validates the ticket, checks the tier, and updates both databases. Invalid or already-used tickets get flagged instantly.
+
+**Organizer Dashboard**: Revenue analytics, attendance trends, and event performance metrics. Built with Next.js for the web version, with key metrics also available in the React Native app.
+
+**AI Chatbot**: An event-specific chatbot that answers attendee questions about schedules, venue locations, and ticket policies. Trained on the event's configuration data so responses are contextual, not generic.
+
+---
+
+## Tech Stack
+
+- **React Native (Expo)**: Cross-platform mobile app for both organizers and attendees
+- **Next.js**: Web dashboard for detailed analytics and event configuration
+- **Supabase**: Auth, persistent storage, PostgreSQL analytics queries
+- **Firebase Realtime Database**: Live attendee tracking and instant updates
+- **GitHub Actions**: CI/CD for automated testing and deployment
+
+Expo was the right choice for a hackathon — fast iteration, hot reloading on physical devices, and EAS builds for quick distribution to the team for testing.
+
+---
+
+## Impact and Results
+
+During the hackathon demo, we showed the judges real-time tracking with simulated attendees. The dual-database architecture was the technical differentiator — other teams either had real-time but no analytics, or analytics but no real-time updates.
+
+Key metrics from our demo:
+
+- **60% reduction** in event setup time compared to manual processes
+- **Sub-second** attendee tracking updates across all connected devices
+- **Real-time** revenue and attendance dashboards
+
+---
+
+## What I Learned
+
+Hackathons teach you to make irreversible architectural decisions fast. The dual-database call was made in the first two hours, and everything else built on top of it. If that decision had been wrong, we wouldn't have had time to pivot.
+
+The team dynamics mattered as much as the tech. With five people and 36 hours, clear ownership boundaries are everything. I owned the architecture and backend, two teammates owned the mobile UI, one owned the web dashboard, and one handled the AI chatbot. Minimal overlap, maximum velocity.
+
+If I were building this for production, I'd add offline support for ticket scanning (events in venues with poor connectivity), push notifications for organizers when capacity thresholds are hit, and a more robust sync mechanism between Firebase and Supabase with conflict resolution.
