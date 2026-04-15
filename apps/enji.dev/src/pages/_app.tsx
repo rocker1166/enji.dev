@@ -1,4 +1,5 @@
 import { GoogleAnalytics } from '@next/third-parties/google';
+import NextHead from 'next/head';
 
 import RootLayout from '@/components/layouts/Root';
 import WithNavigationFooter from '@/components/layouts/WithNavigationFooter';
@@ -35,6 +36,9 @@ function App({ Component, pageProps, router }: AppPropsWithLayout) {
 
   return (
     <Provider>
+      <NextHead>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </NextHead>
       <RootLayout>
         {/* eslint-disable-next-line react/jsx-props-no-spreading */}
         {getLayout(<Component {...pageProps} />)}

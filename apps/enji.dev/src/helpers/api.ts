@@ -1,7 +1,4 @@
 import { ContentType, ReactionType, ShareType } from '@prisma/client';
-import axios from 'axios';
-
-import { TApiResponse } from '@/types';
 
 export const postReaction = async ({
   slug,
@@ -19,12 +16,10 @@ export const postReaction = async ({
   section: string;
 }) => {
   try {
-    await axios.post<TApiResponse>(`/api/reactions/${slug}`, {
-      contentType,
-      contentTitle,
-      type,
-      count,
-      section,
+    await fetch(`/api/reactions/${slug}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType, contentTitle, type, count, section }),
     });
   } catch (err) {
     //
@@ -43,10 +38,10 @@ export const postShare = async ({
   type: ShareType;
 }) => {
   try {
-    await axios.post<TApiResponse>(`/api/shares/${slug}`, {
-      contentType,
-      contentTitle,
-      type,
+    await fetch(`/api/shares/${slug}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType, contentTitle, type }),
     });
   } catch (err) {
     //
@@ -63,9 +58,10 @@ export const postView = async ({
   contentTitle: string;
 }) => {
   try {
-    await axios.post<TApiResponse>(`/api/views/${slug}`, {
-      contentType,
-      contentTitle,
+    await fetch(`/api/views/${slug}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType, contentTitle }),
     });
   } catch (err) {
     //

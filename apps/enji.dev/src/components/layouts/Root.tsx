@@ -3,26 +3,21 @@ import {
   JetBrains_Mono as JetBrainsMono,
   Plus_Jakarta_Sans as PlusJakartaSans,
 } from "next/font/google";
-import { PropsWithChildren, useEffect } from 'react';
+import { PropsWithChildren } from 'react';
 
 const jetbrainsMono = JetBrainsMono({
   subsets: ['latin'],
   variable: '--font-mono',
+  display: 'swap',
 });
 
 const plusJakartaSans = PlusJakartaSans({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
 });
 
 function Root({ children }: PropsWithChildren) {
-  useEffect(() => {
-    document.documentElement.classList.add(
-      jetbrainsMono.variable,
-      plusJakartaSans.variable
-    );
-  }, []);
-
   return (
     <div
       id="__root"

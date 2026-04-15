@@ -47,6 +47,7 @@ function Post({
         description={description}
         ogImage={postOgImages.default}
         structuredData={structuredData}
+        ogType="article"
       />
       <SkipNavigation />
       <PageHeader title={title} description={description} caption={caption} />

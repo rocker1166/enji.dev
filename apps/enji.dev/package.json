@@ -65,6 +65,12 @@
     "tsconfig": "workspace:*",
     "typescript": "^4.9.4"
   },
+  "browserslist": [
+    "chrome >= 87",
+    "firefox >= 78",
+    "safari >= 14",
+    "edge >= 88"
+  ],
   "engines": {
     "node": "^22.14.0"
   }

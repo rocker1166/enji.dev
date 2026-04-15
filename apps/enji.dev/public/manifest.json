@@ -1,0 +1,16 @@
+{
+  "name": "Suman Jana — Full-Stack Developer & AI Systems Builder",
+  "short_name": "Suman Jana",
+  "description": "Full-stack developer building production-grade apps, AI agent systems, and scalable backends with Next.js, TypeScript, and LLMs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

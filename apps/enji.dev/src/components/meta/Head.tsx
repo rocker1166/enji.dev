@@ -8,6 +8,7 @@ interface HeadProps {
   ogImage: string;
   overrideTitle?: boolean;
   structuredData?: string;
+  ogType?: string;
 }
 
 function Head({
@@ -16,6 +17,7 @@ function Head({
   ogImage,
   overrideTitle = false,
   structuredData = '',
+  ogType = 'website',
 }: HeadProps) {
   const currentUrl = useCurrentUrl();
 
@@ -28,11 +30,18 @@ function Head({
       <title>{htmlTitle}</title>
       <meta name="description" content={description} />
       <link rel="icon" href="/favicon.ico" />
+      <meta name="robots" content="index, follow" />
 
       {/* seo */}
       <link rel="canonical" href={currentUrl} />
 
-      {/* og image */}
+      {/* open graph */}
+      <meta property="og:type" content={ogType} />
+      <meta property="og:url" content={currentUrl} />
+      <meta property="og:title" content={htmlTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:site_name" content="Suman Jana" />
+      <meta property="og:locale" content="en_US" />
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />

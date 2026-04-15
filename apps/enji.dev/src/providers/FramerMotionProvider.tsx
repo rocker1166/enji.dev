@@ -1,8 +1,10 @@
 import {
-  domAnimation,
   LazyMotion,
   MotionConfig as MotionProvider,
 } from 'framer-motion';
+
+const loadFeatures = () =>
+  import('framer-motion').then((mod) => mod.domAnimation);
 
 interface FramerMotionProviderProps {
   children: JSX.Element;
@@ -11,7 +13,7 @@ interface FramerMotionProviderProps {
 function FramerMotionProvider({ children }: FramerMotionProviderProps) {
   return (
     <MotionProvider reducedMotion="user">
-      <LazyMotion strict features={domAnimation}>
+      <LazyMotion strict features={loadFeatures}>
         {children}
       </LazyMotion>
     </MotionProvider>
