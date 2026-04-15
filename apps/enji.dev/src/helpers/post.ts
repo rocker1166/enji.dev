@@ -96,7 +96,7 @@ export const getPostStructuredData = ({
         '@type': 'Person',
         name: 'Suman Jana',
         jobTitle: 'Full-Stack Developer',
-        url: 'https://www.enji.dev/about',
+        url: 'https://www.sumanlabs.in/about',
       },
     ],
   });
