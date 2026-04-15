@@ -69,11 +69,13 @@ export default function useInsight({
   }, [slug, contentType, contentTitle, countView]);
 
   const addShare = ({ type }: { type: ShareType }) => {
+    const current = data || INITIAL_VALUE;
+
     // optimistic update
     mutate(
-      merge({}, data, {
+      merge({}, current, {
         meta: {
-          shares: data.meta.shares + 1,
+          shares: current.meta.shares + 1,
         },
       }),
       false
@@ -94,18 +96,20 @@ export default function useInsight({
     type: ReactionType;
     section?: string;
   }) => {
+    const current = data || INITIAL_VALUE;
+
     // optimistic update
     mutate(
-      merge({}, data, {
+      merge({}, current, {
         meta: {
-          reactions: data.meta.reactions + 1,
+          reactions: current.meta.reactions + 1,
           reactionsDetail: {
-            [type]: data.meta.reactionsDetail[type] + 1,
+            [type]: current.meta.reactionsDetail[type] + 1,
           },
         },
         metaUser: {
           reactionsDetail: {
-            [type]: data.metaUser.reactionsDetail[type] + 1,
+            [type]: current.metaUser.reactionsDetail[type] + 1,
           },
         },
       }),
@@ -134,7 +138,7 @@ export default function useInsight({
 
   return {
     isLoading,
-    data,
+    data: data || INITIAL_VALUE,
     addShare,
     addReaction,
   };
