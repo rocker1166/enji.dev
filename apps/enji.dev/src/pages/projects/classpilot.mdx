@@ -16,6 +16,7 @@ liveUrl: https://frosthacks-localhost.vercel.app/
 ---
 
 import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
 
 Most AI tutors just give you the answer. That defeats the entire point of learning. When I built ClassPilot at FrostHacks, the core design constraint was simple: the AI must never hand over a direct answer. It asks questions, nudges you toward the right reasoning, and only reveals information when you've demonstrated understanding. Socratic method, enforced by architecture.
 
@@ -37,7 +38,18 @@ I wanted to build exactly that — an AI that teaches through guided questioning
 
 The system follows a clear pipeline:
 
-**Student** → **Next.js App Router** → **Convex (Realtime DB + Vector Search)** → **LangGraph Agent** → **Gemini 1.5 Pro + Tools** → **Chat / Canvas / Voice Output**
+<Mermaid
+  chart={`graph TD
+    A[Student/Faculty User] -->|Web Browser| B(Next.js Frontend)
+    B -->|Real-time Sync| C(Convex Backend)
+    C -->|Vector Search| D(Vector DB)
+    C -->|Agent Orchestration| E(LangGraph.js Agent)
+    E -->|LLM Calls| F(Gemini 1.5 Pro)
+    E -->|Vision| G(Gemini Vision API)
+    E -->|Search| H(Google Search API)
+    E -->|Voice| I(LiveKit)
+    C -->|Storage| J(Convex Storage)`}
+/>
 
 At the core, LangGraph.js orchestrates a stateful agent that manages conversation flow. The agent has access to several tools:
 
@@ -73,6 +85,10 @@ The flow: student speaks → LiveKit captures audio → speech-to-text → LangG
 The Socratic approach works even better in voice. The AI asks a question, waits for the student to reason through it verbally, then responds. It feels like talking to a teaching assistant, not typing into a chatbox.
 
 Latency was the challenge here. The full pipeline (STT → agent → LLM → TTS) adds up. I optimized by streaming the LLM response to TTS in chunks rather than waiting for the complete response, keeping the conversational flow natural.
+
+The voice agent isn't limited to conversation — it calls tools during speech. While explaining a concept, it can trigger RAG retrieval, generate images, render code blocks, or access the current canvas state. It also maintains a memory of the session, so context carries across voice and text interactions seamlessly.
+
+The hardest challenge was interruption handling. When a student cuts in mid-explanation, the agent needs to stop generating, process the new input, and resume without losing conversational state. LiveKit's track subscription model helped, but getting the state machine right took multiple iterations.
 
 ---
 

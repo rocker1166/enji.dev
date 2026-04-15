@@ -9,6 +9,7 @@ import type { TProjectFrontMatter } from '@/types';
 
 type ProjectPreviewProps = TProjectFrontMatter & {
   slug: string;
+  featured?: boolean;
 };
 
 function ProjectPreview({
@@ -18,6 +19,7 @@ function ProjectPreview({
   date,
   slug,
   tags,
+  featured = false,
 }: ProjectPreviewProps) {
   return (
     <article>
@@ -25,21 +27,33 @@ function ProjectPreview({
         key={slug}
         href={`/projects/${slug}`}
         className={clsx(
-          'border-divider-light group relative block overflow-hidden rounded-2xl border p-4',
-          'md:p-6',
-          'dark:border-divider-dark',
-          'hover:border-accent-400 dark:hover:border-accent-500 transition-colors'
+          'group relative block overflow-hidden bg-gradient-to-t',
+          'sm:rounded-2xl',
+          featured
+            ? [
+                'border-divider-light',
+                'sm:border sm:p-4 md:p-6',
+                'dark:border-divider-dark',
+              ]
+            : ['sm:p-4 md:p-6']
         )}
       >
         <div
           className={clsx(
             'mb-2 flex items-center gap-2 text-xs text-slate-500',
-            'dark:text-slate-400'
+            'md:mb-1 dark:text-slate-400'
           )}
         >
           {caption && (
             <>
-              <span className={clsx('font-semibold')}>{caption}</span>
+              <span
+                className={clsx(
+                  'font-bold text-accent-600',
+                  'dark:text-accent-400'
+                )}
+              >
+                {caption}
+              </span>
               <span>&middot;</span>
             </>
           )}
@@ -60,23 +74,23 @@ function ProjectPreview({
         </div>
         <p
           className={clsx(
-            'mb-4 block leading-relaxed text-slate-600',
+            'mb-3 block leading-relaxed text-slate-600',
             'dark:text-slate-400'
           )}
         >
           {description}
         </p>
         {tags && tags.length > 0 && (
-          <div className={clsx('mb-4 flex flex-wrap gap-2')}>
+          <div className={clsx('mb-3 flex flex-wrap gap-1.5')}>
             {tags.map((tag) => (
               <span
                 key={tag}
                 className={clsx(
-                  'rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600',
-                  'dark:bg-slate-800 dark:text-slate-400'
+                  'text-[11px] font-medium text-slate-500',
+                  'dark:text-slate-500'
                 )}
               >
-                {tag}
+                #{tag}
               </span>
             ))}
           </div>
@@ -87,7 +101,7 @@ function ProjectPreview({
             'dark:text-accent-400'
           )}
         >
-          read more{' '}
+          view project{' '}
           <ChevronRightIcon className="group-hover:animate-bounce-x mt-1 h-3 w-3 transition" />
         </div>
       </Link>

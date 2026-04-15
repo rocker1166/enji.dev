@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-import { m, useAnimationControls } from 'framer-motion';
-import Image from 'next/image';
+import { m } from 'framer-motion';
 
 const animation = {
   hide: { x: -32, opacity: 0 },
@@ -11,14 +10,12 @@ const animation = {
 };
 
 function HeaderTitle() {
-  const controls = useAnimationControls();
-
   return (
     <div>
       <m.div
         className={clsx(
-          'mb-1 flex items-center gap-1 text-2xl text-slate-600',
-          'md:mb-0 md:gap-2 md:text-4xl',
+          'mb-1 text-2xl text-slate-600',
+          'md:mb-0 md:text-4xl',
           'dark:text-slate-400'
         )}
         initial={animation.hide}
@@ -26,37 +23,6 @@ function HeaderTitle() {
         transition={{ delay: 0.1 }}
       >
         hi!
-        <m.div
-          initial={{
-            opacity: 0,
-            y: 16,
-            rotate: 30,
-            transformOrigin: 'right center',
-          }}
-          animate={controls}
-          transition={{
-            type: 'spring',
-            delay: 0.35,
-            bounce: 0.7,
-            duration: 0.7,
-          }}
-        >
-          <Image
-            className={clsx('w-7 md:w-10')}
-            alt="Love-you Gesture"
-            src="/assets/emojis/love-you-gesture.png"
-            width={48}
-            height={48}
-            onLoadingComplete={() => {
-              controls.start({
-                opacity: 1,
-                y: 0,
-                rotate: 0,
-              });
-            }}
-            priority
-          />
-        </m.div>
       </m.div>
       <span className={clsx('text-slate-700', 'dark:text-slate-300')}>
         <m.span

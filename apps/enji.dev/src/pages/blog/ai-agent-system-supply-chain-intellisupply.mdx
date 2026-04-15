@@ -13,10 +13,13 @@ category: dev
 
 import Callout from '@/components/mdx/Callout';
 import Mermaid from '@/components/mdx/Mermaid';
+import YouTube from '@/components/mdx/YouTube';
 
 The first version of IntelliSupply had one agent. It received supply chain data, signals from external sources, and the instruction to "analyze this and recommend mitigation strategies."
 
 It was impressive in demos. It was useless in production.
+
+<YouTube videoId="aH8OR3a7wnY" title="IntelliSupply Walkthrough" />
 
 The agent would hallucinate delay estimates. It would produce recommendations that were logically structured but mathematically wrong — "rerouting through Supplier Y saves 3 days" when the supply graph made that physically impossible. When I traced the bad outputs, I found the same root cause every time: the LLM was doing math. It would reason about delay cascades, calculate propagation through the supply chain, and arrive at confident wrong numbers.
 
