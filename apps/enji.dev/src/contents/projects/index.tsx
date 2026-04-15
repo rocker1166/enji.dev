@@ -35,7 +35,16 @@ function ProjectsContents({ projects }: ProjectsContentsProps) {
                 <ProjectPreview
                   featured
                   slug={featured.slug}
-                  {...featured.frontMatter}
+                  title={featured.frontMatter.title}
+                  description={featured.frontMatter.description}
+                  caption={featured.frontMatter.caption}
+                  date={featured.frontMatter.date}
+                  tags={featured.frontMatter.tags}
+                  category={featured.frontMatter.category}
+                  type={featured.frontMatter.type}
+                  githubUrl={featured.frontMatter.githubUrl}
+                  npmUrl={featured.frontMatter.npmUrl}
+                  liveUrl={featured.frontMatter.liveUrl}
                 />
               </div>
             </div>
@@ -57,7 +66,19 @@ function ProjectsContents({ projects }: ProjectsContentsProps) {
                 )}
               />
               <div className={clsx('flex-1')}>
-                <ProjectPreview slug={slug} {...frontMatter} />
+                <ProjectPreview
+                  slug={slug}
+                  title={frontMatter.title}
+                  description={frontMatter.description}
+                  caption={frontMatter.caption}
+                  date={frontMatter.date}
+                  tags={frontMatter.tags}
+                  category={frontMatter.category}
+                  type={frontMatter.type}
+                  githubUrl={frontMatter.githubUrl}
+                  npmUrl={frontMatter.npmUrl}
+                  liveUrl={frontMatter.liveUrl}
+                />
               </div>
             </div>
           ))}

@@ -7,7 +7,7 @@ interface ProjectImageProps {
   caption?: string;
 }
 
-function ProjectImage({ src, alt, caption }: ProjectImageProps) {
+function ProjectImage({ src, alt, caption = '' }: ProjectImageProps) {
   return (
     <figure className={clsx('mdx-project-image', 'my-6')}>
       <NextImage

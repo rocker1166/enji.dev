@@ -11,6 +11,7 @@ function Mermaid({ chart }: MermaidProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string>('');
+  // eslint-disable-next-line no-plusplus
   const idRef = useRef(`mermaid-${++idCounter}`);
 
   useEffect(() => {
