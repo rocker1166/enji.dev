@@ -131,7 +131,7 @@ export function Items({
   children = null,
 }: PropsWithChildren<ItemsProps>) {
   return (
-    <div className={clsx('flex flex-row gap-6', 'md:gap-12 lg:gap-24')}>
+    <div className={clsx('til-items flex flex-row gap-6', 'md:gap-12 lg:gap-24')}>
       <div className={clsx('hidden', 'md:block md:pb-24')}>
         <div
           className={clsx(
@@ -157,8 +157,8 @@ export function Items({
       </div>
       <div
         className={clsx(
-          'border-divider-light items-stretch border',
-          'dark:border-divider-dark'
+          'w-px self-stretch bg-slate-200',
+          'dark:bg-slate-800'
         )}
       />
       <div
