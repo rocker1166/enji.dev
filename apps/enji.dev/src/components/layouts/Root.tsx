@@ -1,10 +1,9 @@
 import clsx from 'clsx';
 import {
-  Instrument_Serif as InstrumentSerif,
-  Inter_Tight as InterTight,
   JetBrains_Mono as JetBrainsMono,
   Plus_Jakarta_Sans as PlusJakartaSans,
 } from 'next/font/google';
+import localFont from 'next/font/local';
 import { PropsWithChildren } from 'react';
 
 const jetbrainsMono = JetBrainsMono({
@@ -19,19 +18,30 @@ const plusJakartaSans = PlusJakartaSans({
   display: 'swap',
 });
 
-const interTight = InterTight({
-  subsets: ['latin'],
+// display faces are self-hosted (latin subset): a Google Fonts fetch timeout
+// at build time once failed the Vercel deploy
+const interTight = localFont({
+  src: '../../assets/fonts/InterTight-Variable-latin.woff2',
+  weight: '100 900',
   variable: '--font-display',
   display: 'swap',
 });
 
-const instrumentSerif = InstrumentSerif({
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
+const instrumentSerif = localFont({
+  src: [
+    {
+      path: '../../assets/fonts/InstrumentSerif-Regular-latin.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../assets/fonts/InstrumentSerif-Italic-latin.woff2',
+      weight: '400',
+      style: 'italic',
+    },
+  ],
   variable: '--font-serif',
   display: 'swap',
-  adjustFontFallback: false, // next/font has no fallback metrics for this face
 });
 
 function Root({ children }: PropsWithChildren) {
