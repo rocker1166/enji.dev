@@ -22,7 +22,7 @@ const figure = {
 
 function Problems() {
   return (
-    <section className={clsx('content-wrapper pb-28 md:pb-44')}>
+    <section className={clsx('content-wrapper py-24 md:py-32')}>
       <Label>(04) — Hard problems, solved</Label>
       <h2
         className={clsx(
@@ -35,7 +35,7 @@ function Problems() {
           With the numbers.
         </span>
       </h2>
-      <ol className={clsx('border-line/10 mt-14 border-t')}>
+      <ol className={clsx('border-line/10 mt-10 border-t')}>
         {PROBLEMS.map(({ project, problem, fix, result, unit }, i) => (
           <m.li
             key={problem}
@@ -44,8 +44,8 @@ function Problems() {
             whileInView="show"
             viewport={{ once: true, margin: '-80px' }}
             className={clsx(
-              'border-line/10 hover:bg-line/[0.03] group relative grid gap-4 border-b py-8 transition-colors duration-300',
-              'md:grid-cols-12 md:gap-8 md:py-10'
+              'border-line/10 hover:bg-line/[0.03] group relative grid gap-4 border-b py-6 transition-colors duration-300',
+              'md:grid-cols-12 md:gap-8 md:py-7'
             )}
           >
             {/* hover draws an accent hairline across the top of the row */}
@@ -94,7 +94,7 @@ function Problems() {
                 variants={figure}
                 className={clsx(
                   'font-display text-accent-600 dark:text-accent-500 origin-left whitespace-nowrap text-4xl font-semibold tracking-[-0.04em]',
-                  'md:origin-right md:text-6xl'
+                  'md:origin-right md:text-5xl'
                 )}
               >
                 {result}

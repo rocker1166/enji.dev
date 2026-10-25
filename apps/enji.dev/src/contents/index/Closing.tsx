@@ -126,7 +126,7 @@ function Closing() {
     <section className={clsx('pt-10')}>
       <Band />
       <Badges />
-      <div className={clsx('content-wrapper pb-4 pt-24 md:pt-36')}>
+      <div className={clsx('content-wrapper pb-4 pt-16 md:pt-24')}>
         <Label>(06) — Next</Label>
         <div
           className={clsx(

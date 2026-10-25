@@ -51,7 +51,7 @@ function Manifesto() {
   const words = MANIFESTO.split(' ');
 
   return (
-    <section id="manifesto" className={clsx('content-wrapper py-28 md:py-44')}>
+    <section id="manifesto" className={clsx('content-wrapper py-20 md:py-28')}>
       <Label>(01) — Who builds this</Label>
       <p
         ref={ref}

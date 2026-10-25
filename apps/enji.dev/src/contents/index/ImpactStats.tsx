@@ -12,7 +12,7 @@ function ImpactStats() {
   const inView = useInView(ref, { once: true, margin: '-120px' });
 
   return (
-    <section className={clsx('content-wrapper pb-28 md:pb-40')}>
+    <section className={clsx('content-wrapper pb-20 md:pb-28')}>
       <Label>(02) — By the numbers</Label>
       <div
         ref={ref}

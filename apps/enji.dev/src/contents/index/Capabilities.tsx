@@ -6,7 +6,7 @@ import { Label } from '@/contents/index/Manifesto';
 
 function Capabilities() {
   return (
-    <section className={clsx('content-wrapper py-28 md:py-44')}>
+    <section className={clsx('content-wrapper pb-24 md:pb-32')}>
       <Label>(05) — Everything in-house</Label>
       <h2
         className={clsx(
@@ -24,7 +24,7 @@ function Capabilities() {
         </span>{' '}
         every layer.
       </h2>
-      <ul className={clsx('border-line/10 mt-14 border-t')}>
+      <ul className={clsx('border-line/10 mt-10 border-t')}>
         {CAPABILITIES.map(({ title, proof, items }, i) => (
           <m.li
             key={title}
@@ -37,8 +37,8 @@ function Capabilities() {
               ease: [0.16, 1, 0.3, 1],
             }}
             className={clsx(
-              'border-line/10 hover:bg-line/[0.03] group grid gap-3 border-b py-6 transition-colors duration-300',
-              'md:grid-cols-12 md:items-baseline md:gap-6 md:py-8'
+              'border-line/10 hover:bg-line/[0.03] group grid gap-3 border-b py-5 transition-colors duration-300',
+              'md:grid-cols-12 md:items-baseline md:gap-6 md:py-5'
             )}
           >
             <span

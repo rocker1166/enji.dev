@@ -212,13 +212,6 @@ export const PROBLEMS = [
     unit: 'of Cloud Run spend was idle servers',
   },
   {
-    project: 'Yantratools',
-    problem: 'Added real backups to a 62K-customer store',
-    fix: 'Daily disk snapshots, nightly database backups to S3 that are checked, and a restore test that proves they work.',
-    result: '3',
-    unit: 'backup layers, restore tested',
-  },
-  {
     project: 'DynoWeb',
     problem: 'Made an AI agent safe to run on live stores',
     fix: 'Every change it makes is saved first, needs the merchant’s approval and can be undone in one step. The same tools also run as an MCP server.',
@@ -231,13 +224,6 @@ export const PROBLEMS = [
     fix: 'Ran a 20-agent security audit and fixed the leaks it found: IDOR, SQL injection and permission gaps. Unknown roles now get no access by default.',
     result: '249',
     unit: 'issues fixed in 14 PRs',
-  },
-  {
-    project: 'Yantratools',
-    problem: 'Found why big orders were not converting',
-    fix: 'The order data showed sales fall off at the ₹10,000 cash-on-delivery limit, not at the payment gateway the team was blaming.',
-    result: '45.6% → 13.9%',
-    unit: 'conversion below vs above ₹10K',
   },
 ];
 
