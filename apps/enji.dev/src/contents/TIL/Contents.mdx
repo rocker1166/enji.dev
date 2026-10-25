@@ -1,5 +1,148 @@
 import TIL from '@/components/mdx/TIL';
 
+<TIL.Items date="2026-10-25">
+
+  <TIL.Item>
+
+    ## next/font/google can fail your deploy
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    `next/font/google` downloads the font files at build time. On Vercel one build died with `ETIMEDOUT: Failed to fetch Inter Tight from Google Fonts`, so the whole deploy failed over a font. Retrying would have worked, but the real fix is to stop depending on the network: commit the woff2 files and load them with `next/font/local`. Same CSS output, one less thing that can break a build.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## overflow-hidden can collapse a flex child to 1px
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>css</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Flex children get `min-height: auto`, which stops them shrinking below their content. Add `overflow: hidden` and that floor becomes 0, so in a full-height flex column the item can be squeezed away. My footer rendered at 1px tall the moment I added `overflow-hidden`. Fix: `shrink-0` on the footer.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Theme colours as RGB triplets keep Tailwind opacity working
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>css</TIL.ItemTag>
+      <TIL.ItemTag>tailwind</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Store each theme colour as a bare triplet, `--c-line: 255 255 255`, and register it as `rgb(var(--c-line) / <alpha-value>)` in the Tailwind config. Then `border-line/10` and `bg-page/80` work, and light and dark mode are just two sets of variables. A hex variable can't take an opacity modifier.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## StrictMode runs effects twice: mark things done at the end
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>react</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    My intro set `sessionStorage['intro-seen']` at the start of its effect. In dev, StrictMode mounts, cleans up (cancelling the timer) and mounts again, and the second run saw the flag and returned early, so the intro never closed. Write the flag when the work actually finishes, not when it starts.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2026-10-22">
+
+  <TIL.Item>
+
+    ## Cloud Run concurrency has to match your DB pool
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>postgresql</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    The API ran at Cloud Run's default concurrency of 80 with a database pool of 10 connections per instance. Under load, requests piled up waiting for one of those 10 connections while CPU looked idle, so Cloud Run saw no reason to add instances. Dropping concurrency to 20 makes it scale out instead of queueing. Size concurrency from the pool, not from CPU.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Behind a Google load balancer, trust two proxy hops
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>security</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Behind the external HTTPS load balancer, `X-Forwarded-For` arrives as `client, lb-ip`, so the API has to trust two proxy hops, not one, or every rate limit and audit log sees the load balancer's IP instead of the user's. I checked the header on the live path before setting it: measure the hop count, don't assume it.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## Cloud CDN keeps serving old HTML after a deploy
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>nextjs</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    With `s-maxage` set to a year, Cloud CDN keeps the old page after a new revision goes live. Every deploy of the cached site needs `gcloud compute url-maps invalidate-cdn-cache <lb> --path "/*"`, or visitors see yesterday's site.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2026-08-17">
+
+  <TIL.Item>
+
+    ## Gemini context caching bills for storage by the hour
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>ai-agents</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    Cached content is billed per token-hour for as long as it lives, not just when it's read. Our agent created one ~41K-token cache per plan, variant and Cloud Run instance, all with identical content, so up to eight copies were alive at once. That line hit 48× its normal daily cost. I switched caching off the next day; the better design keys one cache by content hash.
+
+  </TIL.Item>
+
+</TIL.Items>
+
+<TIL.Items date="2026-07-20">
+
+  <TIL.Item>
+
+    ## A tagged Cloud Run revision never scales to zero
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+      <TIL.ItemTag>production</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    A revision with a traffic tag stays warm even at 0% traffic, and it keeps the `minScale`, CPU and memory it was created with forever, because revision settings are immutable. Two old `canary-*` tags kept four idle instances running: 67% of our Cloud Run bill, serving nothing. Check `instance_count` grouped by `revision_name`, then `update-traffic --remove-tags`.
+
+  </TIL.Item>
+
+  <TIL.Item>
+
+    ## A warm Cloud Run instance is a memory bill
+
+    <TIL.ItemTags>
+      <TIL.ItemTag>gcp</TIL.ItemTag>
+    </TIL.ItemTags>
+
+    With request-based billing, idle min-instances are CPU-throttled: idle CPU costs about 66× less than active CPU, but idle memory costs about the same as active memory. So cutting vCPUs on an always-on service saves almost nothing; memory size and instance count are the real levers.
+
+  </TIL.Item>
+
+</TIL.Items>
+
 <TIL.Items date="2026-01-20">
 
   <TIL.Item>
@@ -545,4 +688,3 @@ import TIL from '@/components/mdx/TIL';
   </TIL.Item>
 
 </TIL.Items>
-

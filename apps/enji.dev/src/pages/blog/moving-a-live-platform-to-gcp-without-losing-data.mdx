@@ -1,0 +1,119 @@
+---
+title: How I Moved a Live Platform to GCP With 4,000 Users on It
+description: 'Moving Karmyug AI from Supabase, Vercel and a VM to Google Cloud while live: the rules, the cutover and the proof.'
+date: '2026-10-25'
+lang: en
+tags:
+  - gcp
+  - postgresql
+  - devops
+  - production
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+import Mermaid from '@/components/mdx/Mermaid';
+
+Karmyug AI pays people to record voice data on their phones. By late October about 4,000 workers had signed up, and they were recording paid tasks every day. The platform ran on three free-tier pieces: Supabase for the database, Vercel for the three websites, and an Oracle VM for the API and every uploaded file.
+
+That setup got us to launch. It would not get us through the next week. Sign-ups were about to jump, and I wanted everything in one place that scales: Google Cloud, in Mumbai.
+
+The hard part wasn't GCP. It was moving a running system without losing a single row or recording, while people were still using it.
+
+---
+
+## The rules I wrote before touching anything
+
+I wrote these down first, so that at midnight I wouldn't be making judgment calls.
+
+1. **Copy, never move.** Every step copies data. Supabase, Vercel and the VM stay untouched for 7 days, so going back is always possible.
+2. **Stop writes before the final copy.** At cutover the old API container is stopped, not just put in maintenance mode, so nothing can be written after the last dump.
+3. **No proof, no switch.** The databases must match row for row, and every file must match by checksum. Any difference means DNS doesn't move.
+4. **The new system can't reach real users early.** While testing on GCP, emails only go to a log and no scheduled jobs run, so no worker gets a strange email from the copy.
+5. **Backups first.** A fresh database dump and a tar of all uploads exist before step one.
+6. **Rollback keeps data too.** If we had to go back after users wrote to GCP, the same dump, restore and compare would run in reverse.
+
+---
+
+## Build the new stack next to the old one
+
+Everything on GCP was built while the old system kept serving users:
+
+- four Cloud Run services: the public site, the worker app, the admin panel and the API
+- Cloud SQL Postgres 17 with daily backups and point-in-time recovery
+- a private Cloud Storage bucket for uploads
+- a global HTTPS load balancer with a Google-managed certificate and Cloud CDN
+
+Then a **rehearsal copy**: `pg_dump -Fc` from Supabase, `pg_restore` into Cloud SQL through the Cloud SQL Auth Proxy, and uploads copied from the VM into the bucket with `gcloud storage rsync`. I tested every flow on the `run.app` addresses: sign-up, login, ID upload, recording, review, dataset export and the admin pages.
+
+The certificate was ready before cutover too. I tested each hostname against the load balancer with `curl --resolve name:443:<lb-ip>` before any DNS record pointed there, so the switch itself was only a DNS change.
+
+---
+
+## Proving the copy is identical
+
+"The counts match" isn't proof. I wrote two small scripts:
+
+- **`compare-db`** checks every table three ways: row count, an MD5 of every row, and every sequence value. Sequences matter: if they're behind, the first new row on GCP collides with an old ID.
+- **`diff-uploads`** hashes every file on the VM and every object in the bucket and lists anything missing or different.
+
+Both had to come back clean on the rehearsal before I picked a night.
+
+---
+
+## Cutover night
+
+I picked a quiet hour just after midnight and ran the steps from a script, one at a time.
+
+<Mermaid
+  chart={`
+flowchart TD
+    A["Maintenance page on"] --> B["Stop the old API\nwrites are now impossible"]
+    B --> C["Final dump → restore into a fresh database"]
+    C --> D{"compare-db\nall tables identical?"}
+    D -- "no" --> R["Restart old API, investigate"]
+    D -- "yes" --> E["Sync new uploads → diff-uploads"]
+    E --> F["On-demand Cloud SQL backup"]
+    F --> G["Turn on real email + scheduled jobs"]
+    G --> H["Point DNS at the load balancer"]
+    H --> I["Log in, upload, send an email"]
+    I --> J["Maintenance page off"]
+`}
+/>
+
+The proof at the switch:
+
+<Callout variant="info">
+  35 of 35 tables identical (rows, row hashes and sequences). 542 of 542
+  uploaded files identical by MD5. Nothing lost, nothing duplicated.
+</Callout>
+
+---
+
+## What surprised me
+
+**Uploads took most of the window.** My uploads step re-copied every file, and only 2 were new since the rehearsal. The step now copies only files whose MD5 differs. Next time the window is just the database.
+
+**CPU looked idle while requests queued.** The API ran at Cloud Run's default concurrency of 80, with 10 database connections per instance. Under load, requests waited for a connection while CPU sat low, so Cloud Run never added instances. Concurrency 20 fixed it.
+
+**Rate limits saw only the load balancer.** Behind Google's load balancer, `X-Forwarded-For` is `client, lb-ip`. The API has to trust two proxy hops, or every user looks like the same IP. I measured the header on the live path instead of guessing.
+
+**The CDN kept the old site.** The public site is cached for a long time at the edge, so every deploy now ends with a CDN cache invalidation.
+
+---
+
+## After the move
+
+Later that day I load-tested a throwaway copy: 80 people recording at the same time produced 1,807 accepted recordings in 90 seconds with 0 errors and p95 under 2 seconds per step. The next limit is the small database tier, which is a resize, not a rebuild.
+
+Then sign-ups kept coming: past 8,000 workers within days, on the new stack.
+
+---
+
+## What I'd tell anyone doing this
+
+- Write the rules before the steps. At midnight you follow rules, you don't make them.
+- Rehearse the whole thing on real data, and keep the rehearsal database separate from the live one.
+- Prove equality with hashes, not counts, and check sequences.
+- Make the switch a DNS change you've already tested with `curl --resolve`.
+- Keep the old system frozen, not deleted, until the new one has run for a week.

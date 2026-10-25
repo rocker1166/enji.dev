@@ -1,0 +1,103 @@
+---
+title: Our Cloud Run Bill Was Mostly Paying for Servers Doing Nothing
+description: 'How I read a GCP bill properly: idle memory, zombie canary revisions and a 48x cache spike on DynoWeb.'
+date: '2026-10-20'
+lang: en
+tags:
+  - gcp
+  - cloud-run
+  - devops
+  - cost
+category: dev
+---
+
+import Callout from '@/components/mdx/Callout';
+
+DynoWeb is a Shopify app that runs on Google Cloud Run. Earlier this year the bill felt far too high for the traffic we had. Every time someone on the team said "X must be the expensive part", it turned out to be wrong.
+
+What finally worked was simple: stop guessing, and break the bill down into what is actually running. Here's what that turned up, in the order I found it.
+
+---
+
+## 1. The bill pays for capacity, not for work
+
+Cloud Run reports `billable_instance_time` in instance-seconds per day. Divide it by 86,400 and you get **how many instances were warm all day**. That one number explained most of the bill.
+
+At about 13,000 requests a day, our instances were idle almost all the time. We weren't paying for requests. We were paying for servers existing.
+
+<Callout variant="info">
+  First question for any Cloud Run bill: how many instances are warm, and which
+  revisions do they belong to?
+</Callout>
+
+---
+
+## 2. A warm instance is a memory bill
+
+With request-based billing, an idle minimum instance has its CPU throttled. The idle rates tell the story:
+
+- idle CPU costs about **66× less** than active CPU
+- idle memory costs about **the same** as active memory
+
+So an always-on instance is almost entirely a memory cost. We had cut CPU from 2 to 1, and the commit credited it with a big monthly saving. Priced at the real idle rate, the saving was tiny. The real levers were **memory size** and **how many instances stay warm**.
+
+---
+
+## 3. Two zombie revisions were 67% of the bill
+
+This was the big one. Grouping `instance_count` by `revision_name` showed instances on revisions that weren't serving anything.
+
+Two old `canary-*` traffic tags were still pointing at revisions about 135 deploys old. Those revisions kept the settings they were created with: minimum 2 instances, 2 CPUs, 2 GiB each. Two things I didn't know:
+
+- **A tagged revision doesn't scale to zero**, even at 0% traffic. The tag keeps it addressable, so it stays warm.
+- **Revision settings are immutable.** Updating the service never reaches an old revision, so lowering `minScale` on the service did nothing for them.
+
+Four idle instances, **67% of our Cloud Run spend, serving nothing.** The fix was one command:
+
+```bash
+gcloud run services update-traffic dynoweb-app \
+  --region=asia-south1 --remove-tags=<canary-tags>
+```
+
+Our current pipeline deploys canaries with `--no-traffic` and no tag, so this was leftover debris, not an ongoing leak. I still check it after any change to the deploy workflow.
+
+---
+
+## 4. The console told me costs fell 249,744,300%
+
+The billing console once showed a line down by **249,744,300%**. That isn't a saving. The previous period was close to zero, so the percentage is a divide-by-almost-zero artifact, and the cost actually went up. Read the rupees, not the percentage.
+
+---
+
+## 5. A cache that cost 48× more overnight
+
+In August the top line on the bill became Gemini **context-cache storage**, billed per token-hour, at 48× its usual daily cost.
+
+Our AI agent created one cache of about 41,000 tokens per plan, per variant and per Cloud Run instance, and they all held identical content. With several instances up, up to eight identical copies were alive at once, each billed every hour.
+
+I turned caching off the next day. The better design is one cache keyed by a hash of its content, so identical prompts share it.
+
+---
+
+## 6. 127 GiB of old container images
+
+Artifact Registry had 380 images and 127 GiB, because nothing ever deleted old builds. A cleanup policy took it to about 35 GB. It isn't a big line, but it grows forever if you ignore it.
+
+---
+
+## What I chose not to do
+
+- **Scale to zero.** It would remove the last warm instance, but DynoWeb is embedded in the Shopify admin, and a cold start there feels broken to a merchant. One warm instance is worth it.
+- **A committed-use discount.** It was sized against the old, bloated baseline. After the cleanup it needs re-checking from scratch, and it's a money commitment, so it's not a quick yes.
+
+---
+
+## The checklist I use now
+
+1. Divide `billable_instance_time` by 86,400 to get how many instances are warm.
+2. Group `instance_count` by revision, and look for revisions with no traffic.
+3. Price idle memory, not CPU, when sizing an always-on service.
+4. Check tags: anything tagged stays warm with its old settings.
+5. Ignore huge percentage changes; read the actual amounts.
+6. For AI features, look at storage-by-hour lines, not just tokens.
+7. Put a cleanup policy on every image registry on day one.
