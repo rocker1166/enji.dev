@@ -46,7 +46,9 @@ function ImpactStats() {
               )}
             >
               {inView ? <CountUp from={0} to={value} decimals={decimals} /> : 0}
-              <span className={clsx('text-accent-500')}>{suffix}</span>
+              <span className={clsx('text-accent-600 dark:text-accent-500')}>
+                {suffix}
+              </span>
             </div>
             <p
               className={clsx(

@@ -33,7 +33,7 @@ function Word({
       style={{ opacity }}
       className={clsx(
         'mr-[0.24em] inline-block',
-        /\d/.test(word) && 'text-accent-500'
+        /\d/.test(word) && 'text-accent-600 dark:text-accent-500'
       )}
     >
       {word}

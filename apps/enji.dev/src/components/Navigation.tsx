@@ -5,17 +5,21 @@ import NavIcon from '@/components/navigations/NavIcon';
 import NavIconQuickAccess from '@/components/navigations/NavIconQuickAccess';
 import NavLink from '@/components/navigations/NavLink';
 import NavLinkDropdown from '@/components/navigations/NavLinkDropdown';
-import NavLinkExpanded from '@/components/navigations/NavLinkExpanded';
 import NavLogo from '@/components/navigations/NavLogo';
 import NavThemeToggle from '@/components/navigations/NavThemeToggle';
 
 import useOnScroll from '@/hooks/useOnScroll';
 
+import track from '@/helpers/track';
+
+import { RESUME_URL } from '@/contents/index/data';
+
+// one dropdown at every width keeps the bar to five choices (Hick's law)
 const workLinks = [
-  { title: 'Skills & Tools', href: '/work/skills-and-tools' },
   { title: 'Experience', href: '/work/experience' },
-  { title: 'Studio', href: '/work/studio' },
   { title: 'Contact', href: '/work/contact' },
+  { title: 'Skills & Tools', href: '/work/skills-and-tools' },
+  { title: 'Studio', href: '/work/studio' },
 ];
 
 function Navbar() {
@@ -57,11 +61,8 @@ function Navbar() {
               <li>
                 <NavLink title="T.I.L" href="/today-i-learned" />
               </li>
-              <li className={clsx('lg:hidden')} data-accent="blue">
+              <li data-accent="blue">
                 <NavLinkDropdown title="Work" items={workLinks} />
-              </li>
-              <li className={clsx('hidden lg:block')} data-accent="blue">
-                <NavLinkExpanded title="Work" items={workLinks} />
               </li>
             </ul>
           </nav>
@@ -70,7 +71,7 @@ function Navbar() {
               <NavIcon
                 href="https://www.linkedin.com/in/suman-jana-dev/"
                 icon={<LinkedInIcon className={clsx('h-5 w-5')} />}
-                title="Twitter"
+                title="LinkedIn"
               />
             </li>
             <li className={clsx('hidden', 'sm:block')}>
@@ -79,6 +80,19 @@ function Navbar() {
                 icon={<GitHubIcon className={clsx('h-5 w-5')} />}
                 title="GitHub"
               />
+            </li>
+            <li className={clsx('mr-1 hidden', 'sm:block')}>
+              <a
+                href={RESUME_URL}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => track('resume_nav')}
+                className={clsx(
+                  'border-line/20 text-ink hover:border-accent-600 dark:hover:border-accent-500 flex h-9 items-center rounded-full border px-4 text-[13px] font-semibold transition'
+                )}
+              >
+                Resume
+              </a>
             </li>
             <li>
               <NavThemeToggle />

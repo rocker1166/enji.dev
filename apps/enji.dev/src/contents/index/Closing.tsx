@@ -1,13 +1,22 @@
 import clsx from 'clsx';
 import { m, useMotionValue, useSpring } from 'framer-motion';
-import Link from 'next/link';
 
-import { BADGES } from '@/contents/index/data';
+import useMotionPause from '@/hooks/useMotionPause';
+
+import track from '@/helpers/track';
+
+import {
+  BADGES,
+  MAILTO_HELLO,
+  MAILTO_PROJECT,
+  RESUME_URL,
+} from '@/contents/index/data';
 import { Label } from '@/contents/index/Manifesto';
 
 const WORDS = ['Ship', 'Scale', 'Solve', 'Own it'];
 
 function Band() {
+  const paused = useMotionPause();
   return (
     <div
       aria-hidden
@@ -18,6 +27,7 @@ function Band() {
         className={clsx(
           'flex w-max animate-[marquee_28s_linear_infinite] motion-reduce:animate-none'
         )}
+        style={{ animationPlayState: paused ? 'paused' : undefined }}
       >
         {[...WORDS, ...WORDS, ...WORDS, ...WORDS].map((word, i) => (
           <span
@@ -38,6 +48,7 @@ function Band() {
 }
 
 function Badges() {
+  const paused = useMotionPause();
   return (
     <div className={clsx('overflow-hidden py-6')}>
       <ul
@@ -45,6 +56,7 @@ function Badges() {
           'flex w-max animate-[marquee_70s_linear_infinite_reverse] hover:[animation-play-state:paused]',
           'motion-reduce:animate-none'
         )}
+        style={{ animationPlayState: paused ? 'paused' : undefined }}
       >
         {[...BADGES, ...BADGES].map((badge, i) => (
           <li
@@ -82,24 +94,30 @@ function Magnetic() {
       }}
       className={clsx('inline-block')}
     >
-      <Link
-        href="/work/contact"
+      <a
+        href={MAILTO_PROJECT}
+        onClick={() => track('email_project')}
         className={clsx(
-          'bg-accent-500 font-display hover:bg-accent-400 flex h-36 w-36 items-center justify-center rounded-full text-center text-lg font-semibold leading-tight text-white transition-colors',
+          'bg-accent-600 hover:bg-accent-700 font-display flex h-36 w-36 items-center justify-center rounded-full text-center text-xl font-bold leading-tight text-white transition-colors',
           'md:h-44 md:w-44 md:text-xl'
         )}
       >
         Start a<br />
         project →
-      </Link>
+      </a>
     </m.div>
   );
 }
 
 const LINKS = [
-  { label: 'Email', href: 'mailto:sumanjanaled@gmail.com' },
-  { label: 'GitHub', href: 'https://github.com/rocker1166' },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/suman-jana-dev' },
+  { label: 'Email', href: MAILTO_HELLO, cta: 'email_footer' },
+  { label: 'Resume', href: RESUME_URL, cta: 'resume_footer', newTab: true },
+  { label: 'GitHub', href: 'https://github.com/rocker1166', newTab: true },
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/in/suman-jana-dev',
+    newTab: true,
+  },
   { label: 'Experience', href: '/work/experience' },
 ];
 
@@ -124,7 +142,7 @@ function Closing() {
             Got something hard?
             <span
               className={clsx(
-                'text-accent-500 block font-serif font-normal italic'
+                'text-accent-600 dark:text-accent-500 block font-serif font-normal italic'
               )}
             >
               Let&apos;s build it.
@@ -137,16 +155,16 @@ function Closing() {
             'border-line/10 text-soft mt-16 flex flex-wrap gap-x-8 gap-y-3 border-t pt-6 font-mono text-[11px] uppercase tracking-[0.16em]'
           )}
         >
-          {LINKS.map(({ label, href }) => (
+          {LINKS.map(({ label, href, cta, newTab }) => (
             <li key={label}>
               <a
                 href={href}
+                target={newTab ? '_blank' : undefined}
+                rel={newTab ? 'noreferrer' : undefined}
+                onClick={cta ? () => track(cta) : undefined}
                 className={clsx(
-                  'hover:text-accent-600 dark:hover:text-accent-400 transition'
+                  'hover:text-accent-700 dark:hover:text-accent-400 inline-flex min-h-[44px] items-center transition'
                 )}
-                {...(href.startsWith('http')
-                  ? { target: '_blank', rel: 'noreferrer' }
-                  : {})}
               >
                 {label} ↗
               </a>

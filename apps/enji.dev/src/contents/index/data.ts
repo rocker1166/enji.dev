@@ -300,3 +300,14 @@ export const CAPABILITIES = [
     items: ['Expo · React Native', 'Push, OTA updates', 'Offline-first flows'],
   },
 ];
+
+export const EMAIL = 'sumanjanaled@gmail.com';
+export const RESUME_URL = '/resume.pdf';
+export const MAILTO_HELLO = `mailto:${EMAIL}?subject=${encodeURIComponent(
+  'Hello from sumanlabs.in'
+)}`;
+export const MAILTO_PROJECT = `mailto:${EMAIL}?subject=${encodeURIComponent(
+  'Project for Suman'
+)}&body=${encodeURIComponent(
+  'What are you building, and what is broken or missing?\n\nTimeline:\nLinks:\n'
+)}`;

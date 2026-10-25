@@ -7,7 +7,7 @@ import { Label } from '@/contents/index/Manifesto';
 function Capabilities() {
   return (
     <section className={clsx('content-wrapper py-28 md:py-44')}>
-      <Label>(04) — Everything in-house</Label>
+      <Label>(05) — Everything in-house</Label>
       <h2
         className={clsx(
           'font-display text-ink max-w-4xl text-[10vw] font-semibold leading-[0.95] tracking-[-0.045em]',
@@ -15,7 +15,11 @@ function Capabilities() {
         )}
       >
         No hand-offs.{' '}
-        <span className={clsx('text-accent-500 font-serif font-normal italic')}>
+        <span
+          className={clsx(
+            'text-accent-600 dark:text-accent-500 font-serif font-normal italic'
+          )}
+        >
           One person,
         </span>{' '}
         every layer.
@@ -39,7 +43,7 @@ function Capabilities() {
           >
             <span
               className={clsx(
-                'text-faint/70 font-mono text-[11px] tracking-[0.16em] md:col-span-1'
+                'text-faint font-mono text-[11px] tracking-[0.16em] md:col-span-1'
               )}
             >
               0{i + 1}

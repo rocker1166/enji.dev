@@ -23,7 +23,7 @@ const figure = {
 function Problems() {
   return (
     <section className={clsx('content-wrapper pb-28 md:pb-44')}>
-      <Label>(05) — Hard problems, solved</Label>
+      <Label>(04) — Hard problems, solved</Label>
       <h2
         className={clsx(
           'font-display text-ink max-w-4xl text-[10vw] font-semibold leading-[0.95] tracking-[-0.045em]',
@@ -61,7 +61,7 @@ function Problems() {
                 'md:col-span-2 md:flex-col md:gap-1'
               )}
             >
-              <span className={clsx('text-accent-500')}>
+              <span className={clsx('text-accent-700 dark:text-accent-500')}>
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span>{project}</span>
@@ -93,7 +93,7 @@ function Problems() {
               <m.span
                 variants={figure}
                 className={clsx(
-                  'font-display text-accent-500 origin-left whitespace-nowrap text-4xl font-semibold tracking-[-0.04em]',
+                  'font-display text-accent-600 dark:text-accent-500 origin-left whitespace-nowrap text-4xl font-semibold tracking-[-0.04em]',
                   'md:origin-right md:text-6xl'
                 )}
               >

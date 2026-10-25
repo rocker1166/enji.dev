@@ -14,7 +14,7 @@ function Provider({ children = null }: PropsWithChildren) {
     <FramerMotionProvider>
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="light"
         disableTransitionOnChange
       >
         <FocusModeProvider>

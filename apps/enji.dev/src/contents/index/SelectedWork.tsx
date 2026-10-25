@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { m, useScroll, useTransform } from 'framer-motion';
 import NextImage from 'next/image';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { WORK } from '@/contents/index/data';
 import { Label } from '@/contents/index/Manifesto';
@@ -13,6 +13,20 @@ interface CardProps {
   index: number;
   project: (typeof WORK)[number];
   progress: MotionValue<number>;
+}
+
+// the sticky stack needs a screen tall enough for the whole card; below lg
+// the cards sit in normal flow so nothing is clipped on phones or tablets
+function useStacked() {
+  const [stacked, setStacked] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setStacked(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return stacked;
 }
 
 // cards pin one after another; each one shrinks a little as the next lands on it
@@ -30,20 +44,23 @@ function Card({ index, project, progress }: CardProps) {
     [index / WORK.length, 1],
     [1, 1 - (WORK.length - index) * 0.035]
   );
+  const stacked = useStacked();
 
   return (
     <div
       ref={ref}
       className={clsx(
-        'sticky top-0 flex h-[100svh] items-center justify-center px-3',
-        'md:px-6'
+        'relative px-3 py-3',
+        'md:px-6 lg:sticky lg:top-0 lg:flex lg:h-[100svh] lg:items-center lg:justify-center lg:py-0'
       )}
     >
       <m.article
-        style={{ scale, top: `calc(-4vh + ${index * 22}px)` }}
+        style={
+          stacked ? { scale, top: `calc(-4vh + ${index * 22}px)` } : undefined
+        }
         className={clsx(
-          'border-line/10 bg-card relative grid h-[82svh] w-full max-w-[84rem] origin-top grid-rows-[42%_1fr] overflow-hidden rounded-[28px] border',
-          'lg:grid-cols-12 lg:grid-rows-1'
+          'border-line/10 bg-card relative mx-auto grid w-full max-w-[84rem] origin-top overflow-hidden rounded-[28px] border',
+          'lg:h-[82svh] lg:grid-cols-12'
         )}
       >
         <div
@@ -58,7 +75,7 @@ function Card({ index, project, progress }: CardProps) {
             )}
           >
             <span>
-              <span className={clsx('text-accent-500')}>
+              <span className={clsx('text-accent-700 dark:text-accent-500')}>
                 ({String(index + 1).padStart(2, '0')})
               </span>{' '}
               {kind}
@@ -75,7 +92,7 @@ function Card({ index, project, progress }: CardProps) {
           </h3>
           <p
             className={clsx(
-              'text-accent-600 dark:text-accent-400 mt-2 font-serif text-lg italic',
+              'text-accent-700 dark:text-accent-400 mt-2 font-serif text-lg italic',
               'md:text-2xl'
             )}
           >
@@ -91,7 +108,7 @@ function Card({ index, project, progress }: CardProps) {
           </p>
           <ul
             className={clsx(
-              'divide-line/10 border-line/10 mt-auto divide-y border-y'
+              'divide-line/10 border-line/10 mt-5 divide-y border-y lg:mt-auto'
             )}
           >
             {points.map((point) => (
@@ -127,7 +144,7 @@ function Card({ index, project, progress }: CardProps) {
               <Link
                 href={`/projects/${slug}`}
                 className={clsx(
-                  'hover:bg-accent-500 bg-ink text-page rounded-full px-4 py-2 text-sm font-semibold transition hover:text-white'
+                  'hover:bg-accent-700 dark:hover:bg-accent-600 bg-ink text-page rounded-full px-4 py-2 text-sm font-semibold transition hover:text-white'
                 )}
               >
                 Case study →
@@ -137,7 +154,7 @@ function Card({ index, project, progress }: CardProps) {
                 target="_blank"
                 rel="noreferrer"
                 className={clsx(
-                  'hover:border-accent-500 hover:text-accent-600 dark:hover:text-accent-400 border-line/15 text-ink rounded-full border px-4 py-2 text-sm font-semibold transition'
+                  'hover:border-accent-500 hover:text-accent-700 dark:hover:text-accent-400 border-line/15 text-ink rounded-full border px-4 py-2 text-sm font-semibold transition'
                 )}
               >
                 Live ↗
@@ -149,7 +166,8 @@ function Card({ index, project, progress }: CardProps) {
           href={`/projects/${slug}`}
           aria-label={`${name} case study`}
           className={clsx(
-            'border-line/10 relative order-1 overflow-hidden border-b',
+            'border-line/10 relative order-1 aspect-[16/10] overflow-hidden border-b',
+            'lg:aspect-auto',
             'lg:order-2 lg:col-span-7 lg:border-b-0 lg:border-l'
           )}
         >

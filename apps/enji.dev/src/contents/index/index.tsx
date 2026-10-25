@@ -27,8 +27,8 @@ function IndexContents() {
       <Manifesto />
       <ImpactStats />
       <SelectedWork />
-      <Capabilities />
       <Problems />
+      <Capabilities />
       <Closing />
     </div>
   );

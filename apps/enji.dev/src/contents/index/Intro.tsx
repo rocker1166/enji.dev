@@ -6,9 +6,9 @@ const KEY = 'intro-seen';
 
 // a one-per-session curtain: counter to 100, then it lifts off the hero
 export function introDelay() {
-  if (typeof window === 'undefined') return 1.5;
+  if (typeof window === 'undefined') return 1;
   try {
-    return sessionStorage.getItem(KEY) ? 0.1 : 1.5;
+    return sessionStorage.getItem(KEY) ? 0.1 : 1;
   } catch {
     return 0.1;
   }
@@ -33,7 +33,7 @@ function Intro() {
     setShow(true);
     const t0 = performance.now();
     let raf = requestAnimationFrame(function tick(t) {
-      const p = Math.min(1, (t - t0) / 1100);
+      const p = Math.min(1, (t - t0) / 650);
       if (countRef.current) {
         countRef.current.textContent = String(
           Math.round(100 * (1 - (1 - p) ** 3))
@@ -43,17 +43,23 @@ function Intro() {
     });
     // a timer, not the frame loop, lifts the curtain: rAF stalls in background tabs
     // mark it seen only once it has played (StrictMode mounts effects twice in dev)
-    const done = setTimeout(() => {
+    const finish = () => {
       setShow(false);
       try {
         sessionStorage.setItem(KEY, '1');
       } catch {
         // ignore
       }
-    }, 1250);
+    };
+    const done = setTimeout(finish, 800);
+    // any tap, click or key skips it: nobody should wait for a curtain
+    window.addEventListener('pointerdown', finish, { once: true });
+    window.addEventListener('keydown', finish, { once: true });
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(done);
+      window.removeEventListener('pointerdown', finish);
+      window.removeEventListener('keydown', finish);
     };
   }, []);
 
@@ -67,7 +73,7 @@ function Intro() {
             'md:p-10'
           )}
           exit={{ y: '-100%' }}
-          transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
+          transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1] }}
         >
           <div
             className={clsx(
@@ -88,7 +94,7 @@ function Intro() {
             </span>
             <span
               className={clsx(
-                'text-accent-500 mb-3 font-serif text-2xl italic',
+                'text-accent-600 dark:text-accent-500 mb-3 font-serif text-2xl italic',
                 'md:text-4xl'
               )}
             >

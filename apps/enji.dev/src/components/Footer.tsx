@@ -177,7 +177,7 @@ function Footer() {
           )}
         >
           Suman Jana
-          <span className={clsx('text-accent-500')}>.</span>
+          <span className={clsx('text-accent-600 dark:text-accent-500')}>.</span>
         </div>
         <div
           className={clsx(
