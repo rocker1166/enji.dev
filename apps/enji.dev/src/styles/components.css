@@ -11,20 +11,28 @@
   }
 
   .background-grid {
-    @apply relative z-0 bg-slate-100;
-    @apply dark:bg-[#0a0a0a];
+    @apply bg-page relative z-0;
 
     &::before {
-      /* hex-alpha, not /opacity: the grid plugin ignores opacity modifiers */
-      @apply bg-grid-[#e5e5e5cc] absolute inset-0 z-[-1] content-[''];
-      @apply dark:bg-grid-[#ffffff08];
+      @apply absolute inset-0 z-[-1] content-[''];
 
+      /* plain CSS hairlines in the theme's line colour: renders the same in every browser */
+      background-image: linear-gradient(
+          to right,
+          rgb(var(--c-line) / 0.06) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          to bottom,
+          rgb(var(--c-line) / 0.06) 1px,
+          transparent 1px
+        );
+      background-size: 32px 32px;
       mask-image: linear-gradient(transparent, black, transparent);
     }
 
     &--fade-in {
-      @apply bg-transparent bg-gradient-to-t from-slate-100 via-slate-100;
-      @apply dark:bg-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a];
+      @apply from-page via-page bg-transparent bg-gradient-to-t;
 
       &::before {
         @apply bg-left-bottom;
@@ -34,8 +42,7 @@
     }
 
     &--fade-out {
-      @apply bg-transparent bg-gradient-to-b from-slate-100 via-slate-100;
-      @apply dark:bg-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a];
+      @apply from-page via-page bg-transparent bg-gradient-to-b;
 
       &::before {
         mask-image: linear-gradient(black, black, transparent);
