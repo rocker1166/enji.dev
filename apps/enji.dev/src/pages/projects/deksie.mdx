@@ -1,0 +1,102 @@
+---
+title: Deksie - The Operating System for Agencies
+description: 'CRM, projects, approvals, contracts, invoices and an AI assistant for agencies. Go API with 598 routes, Next.js 16 app.'
+caption: Co-founder & CTO · Dec 2025 – now
+layout: Project
+date: '2026-10-21'
+image: /assets/images/work/deksie/dashboard.jpg
+tags:
+  - go
+  - postgres
+  - next.js
+  - react
+  - vertex-ai
+  - rbac
+category: startup
+type: app
+liveUrl: https://www.deksie.com
+---
+
+import Callout from '@/components/mdx/Callout';
+import ProjectImage from '@/components/mdx/ProjectImage';
+
+Creative agencies run on WhatsApp threads, spreadsheets and five different tools. Deksie puts leads, deals, projects, tasks, client approvals, contracts, invoices and docs in one place, with an AI assistant that can answer questions about all of it.
+
+I'm co-founder and CTO. I wrote about 83% of the 1,361 commits across the Go backend and the Next.js app.
+
+<ProjectImage
+  src="/assets/images/work/deksie/dashboard.jpg"
+  alt="Deksie dashboard with tasks, pipeline and health insights"
+  caption="The home dashboard: open tasks, pending approvals, pipeline, overdue work and recent activity."
+/>
+
+---
+
+## By the numbers
+
+- **598** API routes on a Go backend (Echo + GORM + Postgres)
+- **~100** tables, **100** migrations, **385** Go tests
+- **92** routes in the Next.js 16 / React 19 app
+- **249** findings from a 20-agent audit, fixed across **14** PRs
+
+---
+
+## Delivery: projects, tasks and approvals
+
+Projects run on a 7-phase workflow. Tasks have board, list, calendar and timeline views, plus a review step with an SLA: when a task sits in review too long it gets flagged, and analytics shows the median review time.
+
+Clients approve work from a link, without an account: approve, reject or ask for changes. That public endpoint is rate limited and idempotent, so a double click never creates two approvals.
+
+<ProjectImage
+  src="/assets/images/work/deksie/tasks-board.jpg"
+  alt="Deksie task board grouped by status"
+  caption="Task board with review states."
+/>
+
+---
+
+## Money that adds up
+
+Finance is where bugs cost real money, so I built it to be boring:
+
+- invoice numbers come from a sequence inside the same transaction
+- payments are recorded with an idempotency key
+- a refund is a reversal row, never a delete
+- credit balance is derived from the ledger, never stored
+- billing schedules run from a cron worker that is safe to re-run
+- invoices render to PDF on the server
+
+<ProjectImage
+  src="/assets/images/work/deksie/finance.jpg"
+  alt="Deksie finance overview with cash flow and receivables"
+  caption="Finance: cash flow, receivables that need attention, and expenses by category."
+/>
+
+---
+
+## The AI assistant
+
+The assistant answers questions about the agency's own data: who is overloaded, which invoices are overdue, which deals are stuck. It queries through **read-only SQL views on a read-only database pool**, logs every action it takes in a write ledger, is throttled per turn, and fails closed before anything destructive.
+
+<ProjectImage
+  src="/assets/images/work/deksie/assistant.jpg"
+  alt="Deksie AI assistant answering a question about agency data"
+  caption="The assistant answering from live agency data."
+/>
+
+---
+
+## Security
+
+Multi-tenant SaaS lives or dies on tenant isolation. My hardening work included an `ORDER BY` allowlist that closed a SQL injection, RBAC that fails closed for unknown roles, closing a cross-tenant file leak on legacy storage keys, rate-limited auth, email header-injection fixes, and a one-day batch of IDOR and permission fixes across approvals, inbox, webhooks and trash.
+
+<Callout variant="info">
+  The 20-agent bug hunt found 249 issues. Seven of eight fix waves shipped
+  within a week, across 14 PRs in both repos.
+</Callout>
+
+---
+
+## Stack
+
+Go 1.25, Echo, GORM, pgx, Postgres · Next.js 16, React 19, Tailwind 4, TanStack Query, TipTap, Recharts · Vertex AI (Gemini) · Google Cloud Storage · Sentry · GitHub Actions.

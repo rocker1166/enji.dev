@@ -13,15 +13,18 @@ const getHomeStructuredData = () => {
       name: 'Suman Jana',
       url: baseUrl,
       description:
-        'Full-stack developer building production-grade apps, AI agent systems, and scalable backends with Next.js, TypeScript, and LLMs.',
+        'Full-stack engineer and co-founder. Lead engineering at DynoWeb and Deksie, built Karmyug AI (8,000+ workers in 4 days), run Yantratools (62K+ customers), CTO at Kaafila.',
     },
     {
       '@context': 'https://schema.org',
       '@type': 'Person',
       name: 'Suman Jana',
       url: baseUrl,
-      jobTitle: 'Full-Stack Developer',
-      sameAs: ['https://twitter.com/suman_jana', 'https://github.com/sumanjana'],
+      jobTitle: 'Full-Stack Engineer & Co-founder',
+      sameAs: [
+        'https://github.com/rocker1166',
+        'https://www.linkedin.com/in/suman-jana-dev',
+      ],
       image: `${baseUrl}/assets/images/me.png`,
     },
   ]);
@@ -31,8 +34,8 @@ function Index() {
   return (
     <>
       <Head
-        title="Suman Jana · Full-Stack Developer & AI Systems Builder"
-        description="Full-stack developer building production-grade apps, AI agent systems, and scalable backends with Next.js, TypeScript, and LLMs."
+        title="Suman Jana · Full-Stack Engineer & Co-founder"
+        description="Full-stack engineer and co-founder. Lead engineering at DynoWeb and Deksie, built Karmyug AI (8,000+ workers in 4 days), run Yantratools (62K+ customers), CTO at Kaafila."
         ogImage={`${getBaseUrl()}/assets/images/og-image.png`}
         overrideTitle
         structuredData={getHomeStructuredData()}

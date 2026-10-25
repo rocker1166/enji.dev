@@ -1,0 +1,79 @@
+---
+title: Yantratools - Running a Live Marketplace
+description: 'A tools marketplace with 62K+ customers. I built the seller side, the Android seller app, backups and CI/CD.'
+caption: Platform engineer · freelance · Sep 2026 – now
+layout: Project
+date: '2026-10-23'
+image: /assets/images/work/yantratools/storefront.jpg
+tags:
+  - node.js
+  - mongodb
+  - angular
+  - expo
+  - aws
+  - github-actions
+category: client
+type: app
+liveUrl: https://yantratools.com
+---
+
+import Callout from '@/components/mdx/Callout';
+import ProjectImage from '@/components/mdx/ProjectImage';
+
+Yantratools sells farm machinery, pumps, workshop tools and generators across India. When I took over on 6 Sep 2026 it had tens of thousands of customers, no off-box backups, no CI, and no way for third-party sellers to work on the platform.
+
+I now run it. I built the seller side end to end, the ops layer, and the shipping integration.
+
+<ProjectImage
+  src="/assets/images/work/yantratools/storefront.jpg"
+  alt="Yantratools storefront"
+  caption="yantratools.com"
+/>
+
+---
+
+## By the numbers
+
+- **62K+** registered customers, **2,800+** products
+- **100+** seller API routes, **7** seller models
+- **4** apps deployed by CI/CD (storefront, admin, seller portal, API)
+- Backups from **none** to snapshots, nightly verified dumps and a tested restore
+
+---
+
+## The seller side
+
+- **Seller portal** (Angular 20, phone-first, no UI library): dashboard, orders, returns, inventory, enquiries, payments, support and policies. Seven sections are permission-gated and mirror the server's permissions, so a seller only sees what their admin turned on.
+- **Seller API**: 106 route definitions, a wallet ledger that seller and admin both read (so balances always match), an order-confirmation gate before orders reach sellers (25,251 old orders backfilled), and a cancel ledger with reversals and fees.
+- **Android seller app** (Expo, expo-router, NativeWind): orders, inventory, enquiries, payments, returns and support, with push notifications, an inbox and over-the-air updates.
+
+<ProjectImage
+  src="/assets/images/work/yantratools/seller-portal.jpg"
+  alt="Yantratools seller portal sign-in with Android app download"
+  caption="seller.yantratools.com, with the Android app download."
+/>
+
+---
+
+## Making it safe to change
+
+<Callout variant="warning">
+  Day one: the only backups were folders on the same disk as the database, and
+  the API had restarted 86 times.
+</Callout>
+
+**Backups in three layers:** daily and weekly disk snapshots, a nightly MongoDB dump that is checked and copied to S3 for 30 days, and versioned copies of uploads and config. The server's role can upload but cannot delete. A restore drill restores into a throwaway database and compares counts.
+
+**CI/CD for all four apps** on GitHub Actions: tests run against a real MongoDB container, then the build ships over a deploy-only SSH key. On the server, each release unpacks into its own folder, a symlink flips atomically, PM2 reloads, and a health check reverts the release by itself if it fails. Rollback is one command, and a config guard blocks any deploy that expects a config key the server doesn't have.
+
+---
+
+## Shipping and SEO
+
+I fixed three breaks in the Bigship shipping integration (login had been dead for 14 days) and built order creation, courier rates, labels and cancellation. On the storefront I added a 3,001-URL sitemap, robots rules and fixes for 50 broken category redirects.
+
+---
+
+## Finding the real conversion problem
+
+The team thought checkout was broken. The data said otherwise: orders under ₹10,000 converted at **45.6%**, and orders just above it at **13.9%**. The drop was the cash-on-delivery limit, not the payment gateway. That changed what the business worked on next.

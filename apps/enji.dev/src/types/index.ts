@@ -41,6 +41,7 @@ export type TProjectFrontMatter = TBaseFrontMatter & {
   githubUrl?: string;
   npmUrl?: string;
   liveUrl?: string;
+  image?: string;
   date: string;
   tags: Array<string>;
   category: string;

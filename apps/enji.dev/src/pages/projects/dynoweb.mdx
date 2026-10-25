@@ -1,115 +1,115 @@
 ---
-title: DynoWeb - Shopify Behavior-to-Change Platform
-description: Shopify behavior analytics + AI CRO platform — heatmaps, session replay, and AI-powered fixes.
-caption: Startup · UpDesk
+title: DynoWeb - AI Conversion Optimisation for Shopify
+description: 'Finds where a Shopify store loses sales and ships the fix: replays, heatmaps, AI agent, popups. On 74 stores.'
+caption: Co-founder & CTO · Feb 2026 – now
 layout: Project
-date: '2026-01-20'
+date: '2026-10-24'
+image: /assets/images/work/dynoweb/dashboard.jpg
 tags:
   - react-router
-  - supabase
-  - vercel-ai-sdk
-  - gemini
+  - prisma
+  - postgres
   - gcp
-  - shopify
+  - gemini
+  - mcp
 category: startup
 type: app
-liveUrl: https://dynoweb.vercel.app/
+liveUrl: https://www.dynoweb.app
 ---
 
 import Callout from '@/components/mdx/Callout';
+import ProjectImage from '@/components/mdx/ProjectImage';
 
-Analytics tools tell you what's broken. They don't fix it. That gap — between "we found friction" and "we shipped a fix" — is where merchants lose revenue and patience. DynoWeb closes that gap for Shopify stores.
+Analytics tools tell a merchant what is broken. They don't fix it. DynoWeb closes that gap for Shopify stores: it records how shoppers really use the store, finds where sales leak, and ships the fix as a popup, a theme change or an SEO patch the merchant can undo in one click.
 
-I've been building DynoWeb at UpDesk since January 2026 as part of a small 2-3 person team. My role covers the full spectrum: task planning, architecture decisions, feature development, deployments, and shipping to production. I built the entire Shopify app infrastructure from scratch.
+I lead engineering. I wrote about 70% of the 3,000 commits, from the first Shopify app config on 13 Feb 2026 to v1.103 on 24 Oct 2026.
 
----
-
-## What DynoWeb Does
-
-DynoWeb is a Shopify-native behavior analytics and AI-powered conversion rate optimization (CRO) tool. The pipeline is:
-
-1. **Capture**: A lightweight script on the merchant's storefront records interaction signals — clicks, scrolls, rage clicks, form abandonment, hover patterns, and more (13+ signal types).
-2. **Diagnose**: AI analyzes the behavioral data to identify what's causing friction. Not just "users drop off here" but "users rage-click this button because the loading state is unclear."
-3. **Fix**: Merchants can apply AI-suggested changes through Shopify's draft-theme workflow. Changes go to a draft theme first, so nothing hits production without review.
-
-The key differentiator: DynoWeb is more Shopify-native than general analytics tools like Hotjar or FullStory. It understands Shopify's theme architecture, draft themes, and Liquid templating. Fixes aren't generic CSS suggestions — they're actual theme modifications that respect Shopify's deployment model.
+<ProjectImage
+  src="/assets/images/work/dynoweb/dashboard.jpg"
+  alt="DynoWeb home dashboard inside Shopify admin"
+  caption="The home dashboard, embedded in Shopify admin: store health, popups, suggestions and SEO in one place."
+/>
 
 ---
 
-## Behavior Capture and Signal Types
+## By the numbers
 
-The storefront script captures 13+ interaction signal types:
+- **74** stores installed the app
+- **1.3M+** click events and **80K+** sessions tracked in the last 30 days
+- **150** releases in 5 months, **140+** production deploys since July
+- **77** database models, **143** routes, **1,300+** test files
 
-- **Rage clicks**: Repeated rapid clicks on the same element, indicating frustration
-- **Dead clicks**: Clicks on non-interactive elements that users expect to be clickable
-- **Scroll depth**: How far users scroll and where they stop
-- **Form abandonment**: Users who start filling out a form but leave
-- **Hover intent**: Extended hovers suggesting interest or confusion
-- **Error clicks**: Clicks that trigger JavaScript errors
-- **Thrashing**: Rapid mouse movement indicating disorientation
+---
 
-Each signal is tagged with the DOM element, page URL, session ID, timestamp, and device context. This feeds into the analytics dashboard as heatmaps, session replays, and aggregate reports.
+## Tracking, replays and heatmaps
+
+Everything starts with a storefront script I kept under **6 KB gzipped**. It listens for clicks, rage clicks, dead clicks, error clicks, mouse shake, scroll depth, form drop-off and mobile gestures, batches them, and sends them with `sendBeacon` so nothing blocks the page. A bot guard keeps crawlers out of the numbers.
+
+Session replays are rrweb chunks stored in Cloud Storage behind signed URLs. The player reads them straight from storage, which took a big memory load off the app server. Heatmaps went through three versions; the latest rebuilds the page DOM so the overlay lines up on any theme.
+
+<ProjectImage
+  src="/assets/images/work/dynoweb/replay.jpg"
+  alt="DynoWeb session replay with rage, dead and error click markers"
+  caption="Session replay with rage-click, dead-click and error-click markers on the timeline."
+/>
+
+Raw events roll up daily per element, page, form and traffic source, in each shop's own timezone, so dashboards never scan raw rows. Revenue attribution first matches orders by webhook, then falls back to a weighted fingerprint (cart overlap, time, location, price, device) with hard vetoes and a 0.70 threshold.
+
+---
+
+## DynoAgent: an AI agent that can touch a live store safely
+
+Merchants ask in plain English and DynoAgent acts: Gemini with streaming tool calls on the Vercel AI SDK, plus tool search so the model only loads the tools it needs.
+
+The rule I built it around: **no write runs on its own**. Every write saves the store's state before it, shows an approval card, and can be reverted with one call. The same tool surface is also an **MCP server** (Streamable HTTP with OAuth 2.1 dynamic client registration), so Claude can drive DynoWeb directly.
+
+---
+
+## SmartNudge popups
+
+A visual editor where every element is selectable and editable, behaviour triggers (frustration, price hesitation, cart abandon, high intent), and A/B tests with a 10% holdout so the lift is real. One release added **50 new popup types**; the festival set alone has 261 designs.
+
+<ProjectImage
+  src="/assets/images/work/dynoweb/popup-editor.jpg"
+  alt="SmartNudge popup editor with template gallery and inspector"
+  caption="The popup editor: template gallery, canvas and inspector."
+/>
 
 <Callout variant="info">
-Revenue attribution per element was one of the hardest features to build correctly. We track which elements users interact with before completing a purchase, then attribute revenue contribution. This lets merchants see that fixing a broken "Add to Cart" button on mobile could recover a specific dollar amount — making the ROI of changes concrete.
+  Two CI gates keep the editor honest: a jsdom sweep that checks every template
+  draws what its inspector edits, and a Chromium probe that fails the build if
+  any control does nothing.
 </Callout>
 
 ---
 
-## AI Diagnosis with PECTI Scoring
+## CRO reports and suggestions
 
-Raw behavioral data is noise without interpretation. DynoWeb uses Gemini to analyze patterns and score issues using a PECTI framework:
+The suggestion engine runs 17+ rule checks and 6 statistical pattern detectors (two-proportion z-tests) before it ever calls an LLM. A finding has to show up in two runs and 200+ sessions before a merchant sees it. Findings are ranked with PECTI (Proof, Ease, Cost, Time, Impact).
 
-- **P**revalence: How many users are affected?
-- **E**ffect: How severe is the impact on conversion?
-- **C**onfidence: How reliable is the signal data?
-- **T**rend: Is the issue getting worse or better?
-- **I**mpact: What's the estimated revenue impact?
-
-Each identified issue gets a composite PECTI score, and merchants see a prioritized list of problems sorted by potential revenue recovery. The AI doesn't just say "users are frustrated here" — it says "42% of mobile users rage-click your size selector, this correlates with a 15% cart abandonment increase, estimated $2,400/month in lost revenue."
+The CRO report is a 12-stage pipeline (KPIs, funnel, journeys, heatmap intelligence, revenue impact, false-positive filter, lift scoring, LLM narrative, schema check) that ends in a shareable page and a PDF, for about **$0.018** per report.
 
 ---
 
-## SmartNudge: Behavior-Triggered Interventions
+## Infra and cost
 
-SmartNudge detects friction in real-time and triggers interventions before the user bounces. Examples:
+DynoWeb runs on GCP Cloud Run in Mumbai with Neon Postgres. I built the deploy pipeline:
 
-- User rage-clicks a button → show a tooltip explaining the expected behavior
-- User starts abandoning checkout → surface a contextual discount or help prompt
-- User scrolls past a key section → highlight it with a subtle animation
+- push to main builds the image, runs migrations, deploys a **canary with no traffic**, waits for ready, promotes, verifies traffic and runs a smoke test
+- **auto-rollback** on any failure, plus a one-click manual rollback
+- a provenance gate refuses any commit without a merged, green PR
+- parity tests stop the deploy script and workflow from drifting (that drift once froze rollups silently for 5 days)
 
-These nudges are configurable per merchant and trigger based on the same signal types that feed the analytics engine. The goal is to reduce friction at the moment it happens, not after a weekly analytics review.
+Cost work I'm proud of: I found two stale canary revisions that were **67% of the Cloud Run bill** while serving no traffic, halved the warm capacity, shrank the image registry from **127 GiB to 35 GB**, and caught a Gemini cache spike (48× normal) the day after it started.
 
----
-
-## DynoAgent: Chat-Based Store Actions
-
-DynoAgent is a conversational interface for store management. Merchants can ask things like "show me the most rage-clicked elements this week" or "apply the suggested fix for the mobile nav issue."
-
-The key feature: **approval and undo**. DynoAgent never applies changes silently. It proposes an action, the merchant approves, and the change goes to a draft theme. If something looks wrong, one click reverts it. This approval flow was non-negotiable — merchants need to trust that an AI tool won't break their live store.
-
-Built with Vercel AI SDK for streaming responses and tool calling, with Gemini as the underlying LLM. The agent has access to Shopify's Admin API, the behavioral data in Supabase, and the theme modification pipeline.
+<ProjectImage
+  src="/assets/images/work/dynoweb/website.jpg"
+  alt="DynoWeb marketing website"
+  caption="dynoweb.app"
+/>
 
 ---
 
-## Technical Infrastructure
+## What I learned
 
-The stack:
-
-- **React Router** for the merchant dashboard SPA
-- **Prisma + Supabase** for behavioral data storage, user management, and analytics queries
-- **Vercel AI SDK + Gemini** for the diagnosis engine and DynoAgent
-- **GCP** for compute-intensive analytics processing
-- **Shopify App Bridge** for deep Shopify integration
-
-I built the Shopify app infrastructure from zero — OAuth flow, webhook handling, theme access scope management, draft theme creation, and the storefront script injection. Shopify's API surface is massive, and getting the permissions model right (what scopes to request, how to handle store uninstalls, how to manage draft themes) required careful reading of their docs.
-
----
-
-## What I Learned
-
-Building a product at a small startup is fundamentally different from hackathons or side projects. The code has to work for paying users, not demo judges. Edge cases matter. Error handling matters. Onboarding UX matters.
-
-The biggest lesson: **the gap between analytics and action is the real product**. Every analytics tool can show heatmaps. The value is in turning those heatmaps into concrete, safe, reversible changes. That's where DynoWeb lives, and that's what I spend most of my engineering time on — making the fix pipeline reliable and trustworthy.
-
-Working at UpDesk taught me to own the full lifecycle. I don't hand off designs to someone else or wait for a DevOps person to deploy. I plan the feature, build it, test it, deploy it, and monitor it in production. That end-to-end ownership changes how you think about code.
+The gap between analytics and action is the product. Every tool can draw a heatmap; the hard part is turning it into a safe, reversible change on a store that is making money right now. Most of my time goes into making that path trustworthy: approval before writes, undo for everything, and numbers that only show up when they're real.

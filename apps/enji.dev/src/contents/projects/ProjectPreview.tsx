@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import NextImage from 'next/image';
 import Link from 'next/link';
 
 import { ChevronRightIcon } from '@/components/Icons';
@@ -19,6 +20,7 @@ function ProjectPreview({
   date,
   slug,
   tags,
+  image,
   featured = false,
 }: ProjectPreviewProps) {
   return (
@@ -38,6 +40,24 @@ function ProjectPreview({
             : ['sm:p-4 md:p-6']
         )}
       >
+        {image && (
+          <div
+            className={clsx(
+              'relative mb-4 aspect-[16/9] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-900/10',
+              'dark:bg-slate-800 dark:ring-white/10'
+            )}
+          >
+            <NextImage
+              src={image}
+              alt={`${title} screenshot`}
+              fill
+              sizes="(max-width: 768px) 100vw, 800px"
+              className={clsx(
+                'object-cover object-left-top transition duration-500 group-hover:scale-[1.02]'
+              )}
+            />
+          </div>
+        )}
         <div
           className={clsx(
             'mb-2 flex items-center gap-2 text-xs text-slate-500',
@@ -48,7 +68,7 @@ function ProjectPreview({
             <>
               <span
                 className={clsx(
-                  'font-bold text-accent-600',
+                  'text-accent-600 font-bold',
                   'dark:text-accent-400'
                 )}
               >

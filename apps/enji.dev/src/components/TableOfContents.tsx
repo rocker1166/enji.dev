@@ -46,7 +46,7 @@ function TableOfContents({ items = [] }: TableOfContensProps) {
       aria-label="Page table of contents"
       className={clsx(
         'border-divider-light rounded-xl border bg-white',
-        'dark:border-divider-dark dark:bg-[#161e31]'
+        'dark:border-divider-dark dark:bg-[#141414]'
       )}
     >
       <div

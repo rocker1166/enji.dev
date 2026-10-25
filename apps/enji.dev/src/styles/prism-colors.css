@@ -23,7 +23,7 @@
 
 .dark {
   /* background color */
-  --prism-color-background: #161e31;
+  --prism-color-background: #141414;
 
   /* base color */
   --prism-color-base-primary: theme(colors.slate.300);

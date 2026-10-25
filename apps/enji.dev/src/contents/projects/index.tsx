@@ -45,6 +45,7 @@ function ProjectsContents({ projects }: ProjectsContentsProps) {
                   githubUrl={featured.frontMatter.githubUrl}
                   npmUrl={featured.frontMatter.npmUrl}
                   liveUrl={featured.frontMatter.liveUrl}
+                  image={featured.frontMatter.image}
                 />
               </div>
             </div>
@@ -78,6 +79,7 @@ function ProjectsContents({ projects }: ProjectsContentsProps) {
                   githubUrl={frontMatter.githubUrl}
                   npmUrl={frontMatter.npmUrl}
                   liveUrl={frontMatter.liveUrl}
+                  image={frontMatter.image}
                 />
               </div>
             </div>

@@ -36,19 +36,19 @@ function Mermaid({ chart }: MermaidProps) {
         },
         themeVariables: isDark
           ? {
-              primaryColor: '#1e293b',
+              primaryColor: '#1f1f1f',
               primaryTextColor: '#e2e8f0',
               primaryBorderColor: '#475569',
               lineColor: '#64748b',
               secondaryColor: '#0f172a',
               tertiaryColor: '#0f172a',
               background: '#0f172a',
-              mainBkg: '#1e293b',
+              mainBkg: '#1f1f1f',
               nodeBorder: '#475569',
-              clusterBkg: '#1e293b',
+              clusterBkg: '#1f1f1f',
               titleColor: '#e2e8f0',
-              edgeLabelBackground: '#1e293b',
-              attributeBackgroundColorEven: '#1e293b',
+              edgeLabelBackground: '#1f1f1f',
+              attributeBackgroundColorEven: '#1f1f1f',
               attributeBackgroundColorOdd: '#0f172a',
             }
           : {
@@ -89,7 +89,7 @@ function Mermaid({ chart }: MermaidProps) {
         document.documentElement.classList.contains('dark') ||
         document.documentElement.getAttribute('data-theme') === 'dark';
       if (isDark) {
-        tooltip.style.background = '#1e293b';
+        tooltip.style.background = '#1f1f1f';
         tooltip.style.color = '#e2e8f0';
         tooltip.style.border = '1px solid #475569';
       } else {
@@ -104,8 +104,7 @@ function Mermaid({ chart }: MermaidProps) {
     const isOverflowing = (el: Element): boolean => {
       if (el instanceof HTMLElement) {
         return (
-          el.scrollWidth > el.clientWidth ||
-          el.scrollHeight > el.clientHeight
+          el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight
         );
       }
       if (el instanceof SVGTextElement) {

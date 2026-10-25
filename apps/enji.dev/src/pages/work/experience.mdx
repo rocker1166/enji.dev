@@ -5,39 +5,76 @@ caption: Work
 layout: PageWithMDX
 ---
 
-Full-stack developer and AI systems builder, currently building at UpDesk and co-running LastMinuteEngineering. I ship end-to-end — from system design to production deployment.
+Full-stack engineer and co-founder. I lead engineering at DynoWeb and Deksie, built Karmyug AI on my own, run Yantratools, and I'm CTO at Kaafila. I ship end to end: from system design to production, and I stay on call for what I ship.
 
 ---
 
 ## Professional Experience
 
-**UPDESK** (Remote, India)
-*Full-Stack Developer* · January 2026 - Present
-- Building DynoWeb, a Shopify-native behavior analytics and AI CRO platform from scratch.
-- Managing full development flow: task planning, feature brainstorming, deployments, and end-to-end shipping to production.
-- Built the complete Shopify app infrastructure — event capture, heatmaps, AI diagnosis, and draft-theme workflows.
-- **Tech Stack:** React Router, Prisma, Supabase, Vercel AI SDK, Gemini LLM, GCP.
+**DYNOWEB** (Remote)
+_Co-founder & CTO_ · February 2026 - Present
 
-**LASTMINUTEENGINEERING** (Kolkata, India)
-*Lead Developer / Co-founder* · May 2024 - Present
-- Co-founded and built an ed-tech platform serving 11k+ active users, 5k+ YouTube subscribers, and 1M+ page views.
-- Developed the official website with AI-powered features — notes generation, topic-specific video recommendations, and practice questions.
-- **Tech Stack:** TypeScript, Next.js, Firebase, Gemini LLM, Tailwind CSS.
+- Lead engineering on an AI conversion-optimisation app for Shopify: session replays, heatmaps, an AI agent, popups and SEO autopilot. Installed on 74 stores.
+- Wrote ~70% of 3,000 commits and shipped 150 releases in 5 months.
+- Built the tracking pipeline (1.3M+ click events a month), revenue attribution, and DynoAgent, a Gemini tool-calling agent with approval and one-call undo, also exposed as an MCP server with OAuth 2.1.
+- Built canary deploys on GCP Cloud Run with auto-rollback; removed stale revisions that were 67% of the Cloud Run bill and cut the image registry from 127 GiB to 35 GB.
+- **Tech Stack:** TypeScript, React Router, Prisma, Postgres, GCP, Vercel AI SDK, Gemini, GitHub Actions.
+
+**DEKSIE · CtrlZed** (Remote)
+_Co-founder & CTO_ · December 2025 - Present
+
+- Built most of an agency operations SaaS: CRM, projects, client approvals, contracts, finance and an AI assistant (~83% of 1,361 commits).
+- Go API with 598 routes and 100 migrations; Next.js 16 app with 92 routes.
+- Designed a money-safe finance module (idempotent payments, reversal rows, derived balances, PDF invoices) and an AI assistant on read-only SQL views.
+- Led security hardening: fail-closed RBAC, SQL injection and cross-tenant fixes, a 249-finding audit fixed in 14 PRs.
+- **Tech Stack:** Go, Echo, GORM, Postgres, Next.js 16, React 19, Tailwind 4, Vertex AI.
+
+**KAAFILA** (Remote)
+_CTO · equity partner_ · October 2026 - Present
+
+- Lead the tech for a group-travel marketplace: NestJS API, React web and admin, Expo iOS and Android app (on TestFlight), Razorpay, and a Gemini voice assistant that edits live trip plans.
+- **Tech Stack:** NestJS, Drizzle, Supabase, React, Expo, Gemini, Razorpay.
+
+**KARMYUG AI** (Remote)
+_Freelance Full-Stack Engineer, sole engineer_ · September 2026 - October 2026
+
+- Built an AI training-data platform end to end in about 4 weeks: public site, worker PWA, admin panel and a NestJS API (37 models, 200+ routes).
+- 8,000+ workers signed up within about 4 days of launch. Load-tested 80 concurrent recorders: 1,807 recordings in 90 seconds, 0 errors.
+- Built browser and server audio QC, KYC, fraud signals and payouts; launched on GCP (Cloud Run, Cloud SQL, CDN) with every table and file verified.
+- **Tech Stack:** Next.js, NestJS, Prisma, Postgres, GCP, Python, faster-whisper.
+
+**YANTRATOOLS** (Remote)
+_Freelance Platform Engineer_ · September 2026 - Present
+
+- Run a live tools marketplace with 62K+ customers and 2,800+ products.
+- Built the whole seller side: Angular seller portal, 100+ seller API routes, a shared wallet ledger, and an Expo Android seller app with push and OTA updates.
+- Added backups (snapshots, nightly verified MongoDB dumps to S3, restore drills) and CI/CD for 4 apps with atomic releases and self-reverting health checks. Integrated Bigship shipping.
+- **Tech Stack:** Node.js, Express, MongoDB, Angular, Expo, AWS, GitHub Actions.
 
 **FLUXMAP** (Remote, Dubai)
-*Full Stack Developer* · October 2023 - November 2023
-- Built CI/CD pipelines and managed production database operations.
-- Executed precise cleanup of 90K PII records with zero downtime — backup, extraction from legacy JSON fields, webhook pre-filtering.
-- Integrated Stripe payment system API.
+_Full Stack Developer_ · October 2025 - November 2025
+
+- Built the frontend, backend and CI/CD pipeline.
+- Cleaned up 90K PII records in production with zero downtime: backup, extraction from legacy JSON fields, webhook pre-filtering.
+- Integrated the Stripe payment API.
 - **Tech Stack:** TypeScript, Next.js, PostgreSQL, NestJS, Stripe API, GitHub Actions.
 
 **LINEUPX** (Remote, India)
-*Frontend Developer* · May 2023 - October 2023
-- Developed frontend features and delivered pixel-perfect UI from Figma designs.
+_Frontend Developer_ · May 2025 - October 2025
+
+- Built frontend features and pixel-perfect UI from Figma designs.
 - **Tech Stack:** TypeScript, Next.js, Tailwind CSS, Figma.
+
+**LASTMINUTEENGINEERING** (Kolkata, India)
+_Lead Developer / Co-founder_ · May 2024 - Present
+
+- Co-founded and built an ed-tech platform serving 11k+ active users, 5k+ YouTube subscribers, and 1M+ page views.
+- AI-powered notes, topic-specific video recommendations, and practice questions.
+- **Tech Stack:** TypeScript, Next.js, Firebase, Gemini LLM, Tailwind CSS.
 
 ## Hackathons & Achievements
 
 - **100agentdev Winner:** Won $1,500 in an international hackathon (600+ teams) — built IntelliSupply, an AI agent system for supply chain resilience.
 - **HackFest 1st Runner Up:** Secured 2nd position at HackFest organized by IIT Dhanbad — built Tickease, a mobile-first event management platform.
 - **FrostHacks:** Built ClassPilot, an AI-powered RAG tutor with voice interaction and interactive canvas.
+- **5,371 GitHub contributions** in the last 12 months.

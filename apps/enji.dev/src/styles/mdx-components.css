@@ -88,7 +88,7 @@
 
 .dark {
   --code-bg: var(--prism-color-background);
-  --code-window: #1d263a;
+  --code-window: #1c1c1c;
 }
 
 .mdx-code {

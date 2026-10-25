@@ -33,8 +33,8 @@ const ShareItemButton = forwardRef(
       ref={ref}
       className={clsx(
         'flex w-full items-center gap-3 px-4 py-2 text-[13px]',
-        ['hover:bg-slate-100', 'hover:dark:bg-[#1d263a]'],
-        [active && ['bg-slate-100', 'dark:bg-[#1d263a]']]
+        ['hover:bg-slate-100', 'hover:dark:bg-[#1c1c1c]'],
+        [active && ['bg-slate-100', 'dark:bg-[#1c1c1c]']]
       )}
       onClick={onClick}
     >
@@ -61,8 +61,8 @@ const ShareItemLink = forwardRef(
       rel="noreferrer nofollow"
       className={clsx(
         'flex w-full items-center gap-3 px-4 py-2 text-[13px]',
-        ['hover:bg-slate-100', 'hover:dark:bg-[#1d263a]'],
-        [active && ['bg-slate-100', 'dark:bg-[#1d263a]']]
+        ['hover:bg-slate-100', 'hover:dark:bg-[#1c1c1c]'],
+        [active && ['bg-slate-100', 'dark:bg-[#1c1c1c]']]
       )}
     >
       {children}
@@ -106,7 +106,7 @@ function ShareButton({ onItemClick = () => {} }: ShareButtonProps) {
             aria-label="Share"
             className={clsx(
               'relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-200',
-              'dark:bg-[#1d263a]'
+              'dark:bg-[#1c1c1c]'
             )}
           >
             <ShareIcon className={clsx('h-5 w-5')} />

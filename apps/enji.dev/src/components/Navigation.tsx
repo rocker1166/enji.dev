@@ -7,6 +7,7 @@ import NavLink from '@/components/navigations/NavLink';
 import NavLinkDropdown from '@/components/navigations/NavLinkDropdown';
 import NavLinkExpanded from '@/components/navigations/NavLinkExpanded';
 import NavLogo from '@/components/navigations/NavLogo';
+import NavThemeToggle from '@/components/navigations/NavThemeToggle';
 
 import useOnScroll from '@/hooks/useOnScroll';
 
@@ -30,7 +31,7 @@ function Navbar() {
           [
             isScrolled === true && [
               'border-divider-light border-b bg-white/70 backdrop-blur',
-              'dark:border-divider-dark dark:bg-slate-900/80',
+              'dark:border-divider-dark dark:bg-[#0a0a0a]/80',
             ],
           ],
           'fm:hidden'
@@ -79,6 +80,9 @@ function Navbar() {
                 title="GitHub"
               />
             </li>
+            <li>
+              <NavThemeToggle />
+            </li>
             <li className={clsx('hidden', 'sm:block')}>
               <div
                 className={clsx(
@@ -87,7 +91,7 @@ function Navbar() {
                 )}
               />
             </li>
-            <li className={clsx('mr-2')}>
+            <li className={clsx('sm:mr-2')}>
               <NavIconQuickAccess />
             </li>
           </ul>

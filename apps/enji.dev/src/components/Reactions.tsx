@@ -70,7 +70,7 @@ function ReactionCounter({ count, children = null }: ReactionCounterProps) {
     <div
       className={clsx(
         'relative flex h-6 items-center gap-1 overflow-hidden rounded-full bg-slate-200 px-2 py-1',
-        'dark:bg-[#1d263a]'
+        'dark:bg-[#1c1c1c]'
       )}
     >
       {children}

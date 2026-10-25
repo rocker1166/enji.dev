@@ -4,10 +4,16 @@ import { useEffect, useRef } from 'react';
 interface CountUpProps {
   from: number;
   to: number;
+  decimals?: number;
 }
 
-function CountUp({ from, to }: CountUpProps) {
+function CountUp({ from, to, decimals = 0 }: CountUpProps) {
   const nodeRef = useRef(null);
+  const format = (value: number) =>
+    value.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
 
   useEffect(() => {
     const node = nodeRef.current;
@@ -16,14 +22,15 @@ function CountUp({ from, to }: CountUpProps) {
       duration: 1.4,
       ease: 'easeOut',
       onUpdate(value) {
-        node.textContent = value.toFixed(0);
+        node.textContent = format(value);
       },
     });
 
     return () => controls.stop();
-  }, [from, to]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- format only depends on decimals
+  }, [from, to, decimals]);
 
-  return <span ref={nodeRef}>{to}</span>;
+  return <span ref={nodeRef}>{format(to)}</span>;
 }
 
 export default CountUp;

@@ -39,7 +39,7 @@ function ActionCenterButton({
       onClick={onClick}
       className={clsx(
         'relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl p-4 transition-colors',
-        'dark:bg-[#1d263a]',
+        'dark:bg-[#1c1c1c]',
         [active ? ['bg-white', 'dark:bg-slate-700'] : 'bg-white/50']
       )}
     >

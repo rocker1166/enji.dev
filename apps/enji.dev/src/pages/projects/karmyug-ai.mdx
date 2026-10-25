@@ -1,0 +1,96 @@
+---
+title: Karmyug AI - Crowd Data Platform for AI Training
+description: 'Voice-data platform for AI training. Four apps and an API built solo in ~4 weeks; 8,000+ workers in 4 days.'
+caption: Sole engineer · freelance · Sep – Oct 2026
+layout: Project
+date: '2026-10-25'
+image: /assets/images/work/karmyug/admin-overview.jpg
+tags:
+  - next.js
+  - nestjs
+  - prisma
+  - postgres
+  - cloud-run
+  - audio
+category: client
+type: app
+liveUrl: https://karmyug.in
+---
+
+import Callout from '@/components/mdx/Callout';
+import ProjectImage from '@/components/mdx/ProjectImage';
+
+Karmyug AI collects and labels training data for AI companies: speech, text, images and video, recorded by real people on real devices in their own language. Workers sign up, pass a short test and an ID check, record tasks on their phone, and get paid for every approved task.
+
+I was the only engineer. I designed and built all four apps and the API, from the first commit on 22 Sep 2026 to the GCP launch on 22 Oct.
+
+<ProjectImage
+  src="/assets/images/work/karmyug/admin-overview.jpg"
+  alt="Karmyug admin overview with worker, KYC and lead counts"
+  caption="The admin overview about four days after launch: 8,151 workers, 1,615 IDs waiting for review, 318 active in the last day."
+/>
+
+---
+
+## By the numbers
+
+- **8,000+** workers signed up in about **4 days** after launch
+- **4** production apps plus an API: public site (88 pages), worker app, admin (42 pages), API
+- **200+** API routes, **37** data models, **33** test files
+- Load test: **80** people recording at once, **1,807** recordings accepted in 90 seconds, **0** errors
+
+---
+
+## The worker app
+
+A phone-first PWA. New workers go through a checklist (agreements, profile, a qualification test, ID check with a selfie taken in the page), then claim tasks with a 30-minute hold so two people never record the same prompt.
+
+The recording room checks audio before upload: 16-bit WAV, length, loudness, clipping and silence. Conversation tasks let 2 to 8 people record on one phone. Earnings, history and payout requests are all in the app.
+
+<ProjectImage
+  src="/assets/images/work/karmyug/worker-app.jpg"
+  alt="Karmyug worker landing page with open recording jobs"
+  caption="work.karmyug.in: open jobs by language, paid per approved task."
+/>
+
+---
+
+## Quality and fraud
+
+Bad data is worse than no data, so quality runs in layers:
+
+1. **In the browser** before upload: format, length, loudness, clipping, silence.
+2. **On the server**: speech present, reading speed, duplicate audio.
+3. **A Python service** (FastAPI + faster-whisper) for language ID, word error rate against the script and signal-to-noise.
+
+Fraud signals flag duplicate audio, shared devices, shared IPs and VPNs. Reviewers get a queue with audio playback, approve or reject with a reason, and can bulk-approve by rule.
+
+---
+
+## The admin panel
+
+Projects with pay rates, quotas and pilot batches; task upload by CSV or audio; workers, vendors and clients; KYC; payouts with TDS; a languages directory; email campaigns and automations; a CMS for the public site; an audit log; and dataset export as a ZIP for the client.
+
+---
+
+## Launch on GCP
+
+Production runs on Google Cloud in Mumbai: four Cloud Run services, Cloud SQL Postgres 17 with daily backups and point-in-time recovery, Cloud Storage, a global HTTPS load balancer with Cloud CDN, Secret Manager and Cloud Scheduler.
+
+<Callout variant="info">
+  I moved production from the earlier Supabase/Vercel setup to GCP the night
+  before launch and verified it before switching traffic: 35 of 35 tables
+  matched and 542 of 542 uploaded files matched by checksum.
+</Callout>
+
+<ProjectImage
+  src="/assets/images/work/karmyug/website.jpg"
+  alt="Karmyug AI public website"
+  caption="karmyug.in"
+/>
+
+---
+
+## What I learned
+
+Launch day is a load test you don't control. Building the checks into the browser saved the server from thousands of bad uploads, and the dry-run load test (80 workers recording non-stop) is why sign-up day was boring in the good way.

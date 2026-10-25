@@ -1,0 +1,53 @@
+---
+title: Kaafila - Group Trips with People You've Met
+description: 'Small group trips run by verified hosts: meet the group before you pay. iOS, Android, web and admin.'
+caption: CTO · equity partner · Oct 2026 – now
+layout: Project
+date: '2026-10-22'
+image: /assets/images/work/kaafila/screens.jpg
+tags:
+  - nestjs
+  - drizzle
+  - expo
+  - react
+  - gemini
+  - razorpay
+category: startup
+type: app
+liveUrl: https://kaafila.club
+---
+
+import ProjectImage from '@/components/mdx/ProjectImage';
+
+Travelling solo in India is hard; travelling with strangers is a gamble. Kaafila lets verified hosts and agencies run small group trips where you can see who is going and chat with them before you pay. Once the trip starts, the app becomes its companion.
+
+I'm the CTO and hold equity. I built and run the whole tech side: about 220 commits in three weeks across four repos.
+
+<ProjectImage
+  src="/assets/images/work/kaafila/screens.jpg"
+  alt="Kaafila app screens: onboarding, trip reels, live trip, day plan and op assistant"
+  caption="Onboarding, trip reels, a live trip, the day plan, and the op assistant."
+/>
+
+---
+
+## What's built
+
+- **Marketplace:** trips, hosts, reels, group chat, bookings with a 15-minute seat hold, waitlists, gender-mix and rooming rules, Razorpay payments and receipts.
+- **On-trip companion:** offline itinerary, reminders, a trip wallet for tickets and permits, headcount, SOS, an incident log and an ops board for the host.
+- **Op assistant:** hosts type or speak a change ("lunch moves to 1:45") and Gemini updates the live plan and tells the group. It also reads attachments (PDF, Word, Excel, photos).
+- **Design system:** a 74-screen glass design board, then every flow restyled in one day with eight parallel agents.
+
+---
+
+## Stack and shipping
+
+NestJS + Fastify + Drizzle (34-table schema) · React + Vite web and admin · Expo for iOS and Android · Supabase in Mumbai · Gemini · Razorpay.
+
+The API runs on an Oracle VM, web and admin on Vercel. iOS is on TestFlight with over-the-air updates, and Android ships as an APK while the Play Store closed test runs.
+
+<ProjectImage
+  src="/assets/images/work/kaafila/website.jpg"
+  alt="Kaafila website"
+  caption="kaafila.club"
+/>

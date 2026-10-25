@@ -14,17 +14,37 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans, "")', ...defaultTheme.fontFamily.sans],
         mono: ['var(--font-mono, "")', ...defaultTheme.fontFamily.mono],
+        display: ['var(--font-display, "")', ...defaultTheme.fontFamily.sans],
+        serif: ['var(--font-serif, "")', ...defaultTheme.fontFamily.serif],
       },
       colors: {
+        // matte theme: every slate-* becomes a neutral (no blue cast)
+        slate: colors.neutral,
+        // theme tokens, defined in styles/base.css for light and .dark
+        page: 'rgb(var(--c-page) / <alpha-value>)',
+        card: 'rgb(var(--c-card) / <alpha-value>)',
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        soft: 'rgb(var(--c-soft) / <alpha-value>)',
+        faint: 'rgb(var(--c-faint) / <alpha-value>)',
+        line: 'rgb(var(--c-line) / <alpha-value>)',
         divider: {
-          light: colors.slate[200],
-          dark: colors.slate[800],
+          light: colors.neutral[200],
+          dark: colors.neutral[800],
         },
       },
       animation: {
         'bounce-x': 'bounce-x 1s infinite',
+        marquee: 'marquee 60s linear infinite',
       },
       keyframes: {
+        scrollcue: {
+          from: { transform: 'translateY(-100%)' },
+          to: { transform: 'translateY(200%)' },
+        },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
         'bounce-x': {
           '0%, 100%': {
             transform: 'translateX(25%)',
@@ -56,8 +76,8 @@ module.exports = {
     },
     require('@headlessui/tailwindcss'),
     require('tailwindcss-accent')({
-      colors: ['violet', 'blue'],
-      root: 'violet',
+      colors: ['orange'],
+      root: 'orange',
     }),
   ],
 };
