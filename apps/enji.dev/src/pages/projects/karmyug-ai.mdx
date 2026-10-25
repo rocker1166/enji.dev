@@ -73,14 +73,16 @@ Projects with pay rates, quotas and pilot batches; task upload by CSV or audio; 
 
 ---
 
-## Launch on GCP
+## Moving to GCP while live
 
-Production runs on Google Cloud in Mumbai: four Cloud Run services, Cloud SQL Postgres 17 with daily backups and point-in-time recovery, Cloud Storage, a global HTTPS load balancer with Cloud CDN, Secret Manager and Cloud Scheduler.
+With about 4,000 users already signed up, I moved the whole platform from Supabase and Vercel to Google Cloud while it was running: the API, the website, the worker app and the live database. Downtime was about 10 minutes.
+
+Production now runs on Google Cloud in Mumbai: four Cloud Run services, Cloud SQL Postgres 17 with daily backups and point-in-time recovery, Cloud Storage, a global HTTPS load balancer with Cloud CDN, Secret Manager and Cloud Scheduler.
 
 <Callout variant="info">
-  I moved production from the earlier Supabase/Vercel setup to GCP the night
-  before launch and verified it before switching traffic: 35 of 35 tables
-  matched and 542 of 542 uploaded files matched by checksum.
+  Before switching traffic I checked the new database against the old one: 35 of
+  35 tables matched, and 542 of 542 uploaded files matched by checksum. No data
+  was lost.
 </Callout>
 
 <ProjectImage

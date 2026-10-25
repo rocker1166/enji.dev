@@ -30,9 +30,9 @@ function Problems() {
           'md:text-7xl'
         )}
       >
-        Things that broke.{' '}
+        Problems I fixed in production.{' '}
         <span className={clsx('text-faint font-serif font-normal italic')}>
-          What I did about it.
+          With the numbers.
         </span>
       </h2>
       <ol className={clsx('border-line/10 mt-14 border-t')}>
